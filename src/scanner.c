@@ -25,6 +25,8 @@ enum TokenType {
 
 void *tree_sitter_containerfile_external_scanner_create() {
     scanner_state *state = malloc(sizeof(scanner_state));
+    if (!state)
+        return NULL;
     memset(state, 0, sizeof(scanner_state));
     return state;
 }
@@ -83,18 +85,24 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
         state->heredocs[i] = NULL;
     }
 
-    if (length == 0) {
-        state->in_heredoc = false;
-        state->stripping_heredoc = false;
-        state->heredoc_count = 0;
+    state->in_heredoc = false;
+    state->stripping_heredoc = false;
+    state->heredoc_count = 0;
+
+    if (length < 2) {
+        return;
     } else {
         unsigned pos = 0;
         state->in_heredoc = buffer[pos++];
         state->stripping_heredoc = buffer[pos++];
 
         unsigned heredoc_count = 0;
-        for (unsigned i = 0; i < MAX_HEREDOCS; i++) {
-            unsigned len = strlen(&buffer[pos]);
+        for (unsigned i = 0; i < MAX_HEREDOCS && pos < length; i++) {
+            const char *end = memchr(&buffer[pos], '\0', length - pos);
+            if (!end)
+                break;
+
+            unsigned len = end - &buffer[pos];
 
             // We found the ending null byte which means that we're done.
             if (len == 0)
@@ -103,6 +111,8 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
             // Account for the ending null byte in strings (again).
             len++;
             char *heredoc = malloc(len);
+            if (!heredoc)
+                break;
             memcpy(heredoc, &buffer[pos], len);
             state->heredocs[i] = heredoc;
             heredoc_count++;
@@ -197,6 +207,8 @@ static bool scan_marker(scanner_state *state, TSLexer *lexer) {
     // We copy the delimiter string to the heap here since we can't store our
     // stack-allocated string in our state (which is stored on the heap).
     char *del_copy = malloc(del_idx + 1);
+    if (!del_copy)
+        return false;
     memcpy(del_copy, delimiter, del_idx + 1);
 
     if (state->heredoc_count == 0) {

@@ -25,5 +25,5 @@ Homepage = "https://github.com/wharflab/tree-sitter-containerfile"
 core = ["tree-sitter~=0.24"]
 
 [tool.cibuildwheel]
-build = "cp310-*"
+build = "cp3{10,11,12,13}-*"
 build-frontend = "build"

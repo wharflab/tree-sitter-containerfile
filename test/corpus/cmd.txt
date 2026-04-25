@@ -32,7 +32,7 @@ CMD echo "test" \
 			(shell_fragment))))
 
 ==================
-Run with shell empty array
+Cmd with empty JSON array
 ==================
 
 cmd []
@@ -44,7 +44,7 @@ cmd []
 	    (json_string_array)))
 
 ==================
-Run with shell array
+Cmd with JSON array
 ==================
 
 cmd ["echo", "test"]
@@ -56,4 +56,3 @@ cmd ["echo", "test"]
     (json_string_array
       (json_string)
       (json_string))))
-

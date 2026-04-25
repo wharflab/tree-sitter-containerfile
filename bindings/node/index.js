@@ -1,15 +1,16 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const root = fileURLToPath(new URL("../..", import.meta.url));
+const rootURL = new URL("../..", import.meta.url);
+const root = fileURLToPath(rootURL);
 
 const binding = typeof process.versions.bun === "string"
   // Support `bun build --compile` by being statically analyzable enough to find the .node file at build-time
-  ? await import(`${root}/prebuilds/${process.platform}-${process.arch}/tree-sitter-containerfile.node`)
+  ? (await import(new URL(`prebuilds/${process.platform}-${process.arch}/tree-sitter-containerfile.node`, rootURL).href)).default
   : (await import("node-gyp-build")).default(root);
 
 try {
-  const nodeTypes = await import(`${root}/src/node-types.json`, { with: { type: "json" } });
+  const nodeTypes = await import(new URL("src/node-types.json", rootURL).href, { with: { type: "json" } });
   binding.nodeTypeInfo = nodeTypes.default;
 } catch { }
 

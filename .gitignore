@@ -40,9 +40,6 @@ __pycache__/
 zig-cache/
 zig-out/
 
-# Example dirs
-/examples/*/
-
 # Grammar volatiles
 *.wasm
 *.obj

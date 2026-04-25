@@ -4,8 +4,9 @@ fn main() {
     let mut c_config = cc::Build::new();
     c_config.std("c11").include(src_dir);
 
-    #[cfg(target_env = "msvc")]
-    c_config.flag("-utf-8");
+    if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
+        c_config.flag("-utf-8");
+    }
 
     if std::env::var("TARGET").unwrap() == "wasm32-unknown-unknown" {
         let Ok(wasm_headers) = std::env::var("DEP_TREE_SITTER_LANGUAGE_WASM_HEADERS") else {

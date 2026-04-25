@@ -18,6 +18,9 @@ endif()
 include(GNUInstallDirs)
 
 find_program(TREE_SITTER_CLI tree-sitter DOC "Tree-sitter CLI")
+if(NOT TREE_SITTER_CLI)
+    message(FATAL_ERROR "tree-sitter CLI not found; install it and re-run cmake.")
+endif()
 
 add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/grammar.json"
                           "${CMAKE_CURRENT_SOURCE_DIR}/src/node-types.json"
@@ -67,7 +70,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/tree-sitter-containerfile.pc"
 install(TARGETS tree-sitter-containerfile
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
-file(GLOB QUERIES queries/*.scm)
+file(GLOB QUERIES CONFIGURE_DEPENDS queries/*.scm)
 install(FILES ${QUERIES}
         DESTINATION "${CMAKE_INSTALL_DATADIR}/tree-sitter/queries/containerfile")
 

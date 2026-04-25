@@ -15,7 +15,6 @@ jobs:
   build_sdist:
     name: Build source dist
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

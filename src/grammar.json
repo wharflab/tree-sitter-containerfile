@@ -3,20 +3,37 @@
   "name": "containerfile",
   "rules": {
     "source_file": {
-      "type": "REPEAT",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "_instruction"
-          },
-          {
-            "type": "STRING",
-            "value": "\n"
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_instruction"
+              },
+              {
+                "type": "STRING",
+                "value": "\n"
+              }
+            ]
           }
-        ]
-      }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_instruction"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
     },
     "_instruction": {
       "type": "CHOICE",
@@ -1283,41 +1300,36 @@
           }
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "tag",
-              "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "image_tag"
-                  },
-                  {
-                    "type": "BLANK"
-                  }
-                ]
+          "type": "FIELD",
+          "name": "tag",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "image_tag"
+              },
+              {
+                "type": "BLANK"
               }
-            },
-            {
-              "type": "FIELD",
-              "name": "digest",
-              "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "image_digest"
-                  },
-                  {
-                    "type": "BLANK"
-                  }
-                ]
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "digest",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "image_digest"
+              },
+              {
+                "type": "BLANK"
               }
-            }
-          ]
+            ]
+          }
         }
       ]
     },

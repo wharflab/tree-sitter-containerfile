@@ -17,7 +17,7 @@
       "highlights": [
         "queries/highlights.scm"
       ],
-      "injection-regex": "^(containerfile|dockerfile|docker)$"
+      "injection-regex": "^(containerfile|dockerfile|docker|container)$"
     }
   ],
   "metadata": {

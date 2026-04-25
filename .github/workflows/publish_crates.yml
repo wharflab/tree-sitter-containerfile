@@ -35,7 +35,7 @@ jobs:
             popd > /dev/null
           done < <(jq -r '.grammars[].path // "."' tree-sitter.json)
       - name: Sync version from tree-sitter.json
-        run: yq -i ".package.version = \"$(jq -r .metadata.version tree-sitter.json)\"" Cargo.toml
+        run: yq -i -o toml ".package.version = \"$(jq -r .metadata.version tree-sitter.json)\"" Cargo.toml
 
       - name: Set up registry token
         if: github.event_name != 'pull_request'

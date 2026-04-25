@@ -16,15 +16,19 @@ jobs:
       - name: Run corpus tests
         run: tree-sitter test
       - name: Parse real-world Containerfile fixtures
-        run: tree-sitter parse examples/* --quiet --stat
-      - name: Assert zero parse errors on real-world fixtures
         run: |
-          for fixture in examples/*; do
-            output=$(tree-sitter parse "$fixture")
-            if echo "$output" | grep -qE '\(ERROR|MISSING'; then
-              echo "$fixture has parse errors:"
+          shopt -s nullglob
+          fixtures=(examples/*)
+          if [ ${#fixtures[@]} -eq 0 ]; then
+            echo "No fixtures under examples/, skipping."
+            exit 0
+          fi
+          failed=0
+          for fixture in "${fixtures[@]}"; do
+            if ! output=$(tree-sitter parse "$fixture" --quiet --stat 2>&1); then
+              echo "::error file=$fixture::parse errors detected"
               echo "$output" | grep -E '\(ERROR|MISSING' | head -20
-              exit 1
+              failed=1
             fi
-            echo "$fixture parsed cleanly with no ERROR or MISSING nodes."
           done
+          exit "$failed"

@@ -3,13 +3,13 @@ from os import path
 from sysconfig import get_config_var
 
 from setuptools import Extension, find_packages, setup
-
-with open("tree-sitter.json") as f:
-    _metadata = json.load(f)["metadata"]
 from setuptools.command.build import build
 from setuptools.command.build_ext import build_ext
+from setuptools.command.bdist_wheel import bdist_wheel
 from setuptools.command.egg_info import egg_info
-from wheel.bdist_wheel import bdist_wheel
+
+with open("tree-sitter.json", encoding="utf-8") as f:
+    _metadata = json.load(f)["metadata"]
 
 
 class Build(build):

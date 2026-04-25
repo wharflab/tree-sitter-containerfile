@@ -32,7 +32,7 @@ ENTRYPOINT echo "test" \
 			(shell_fragment))))
 
 ==================
-Run with shell empty array
+Entrypoint exec form, empty array
 ==================
 
 ENTRYPOINT []
@@ -44,7 +44,7 @@ ENTRYPOINT []
 	    (json_string_array)))
 
 ==================
-Run with shell array
+Entrypoint exec form
 ==================
 
 ENTRYPOINT ["echo", "test"]

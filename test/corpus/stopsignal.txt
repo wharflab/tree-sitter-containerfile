@@ -7,7 +7,7 @@ STOPSIGNAL 9
 ---
 
 (source_file
-	(stopsignal_instruction))
+  (stopsignal_instruction))
 
 ==================
 Signal name
@@ -18,7 +18,7 @@ STOPSIGNAL SIGKILL
 ---
 
 (source_file
-	(stopsignal_instruction))
+  (stopsignal_instruction))
 
 =========================================================
 Signal value with expansions
@@ -44,8 +44,8 @@ STOPSIGNAL A B
 ---
 
 (source_file
-  (ERROR
-    (stopsignal_instruction)))
+  (stopsignal_instruction)
+  (ERROR))
 
 =========================================================
 No space in signal value before expansion
@@ -70,4 +70,5 @@ STOPSIGNAL A$ B
 ---
 
 (source_file
+  (stopsignal_instruction)
   (ERROR))

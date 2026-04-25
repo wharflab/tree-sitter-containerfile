@@ -42,7 +42,7 @@ declare const binding: {
    *
    * @see {@linkplain https://tree-sitter.github.io/tree-sitter/using-parsers/6-static-node-types Static Node Types}
    */
-  nodeTypeInfo: NodeInfo[];
+  nodeTypeInfo?: NodeInfo[];
 
   /** The syntax highlighting query for this grammar. */
   HIGHLIGHTS_QUERY?: string;

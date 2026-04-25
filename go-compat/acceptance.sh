@@ -8,7 +8,7 @@ trap 'rm -rf "$tmpdir"' EXIT
 cat >"$tmpdir/go.mod" <<EOF
 module tree_sitter_containerfile_go_compat_smoke
 
-go 1.26.0
+go 1.23.0
 
 require github.com/wharflab/tree-sitter-containerfile v0.0.0
 

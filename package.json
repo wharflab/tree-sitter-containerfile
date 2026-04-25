@@ -61,6 +61,6 @@
     "generate": "tree-sitter generate --abi 14 && tree-sitter-go-types",
     "lint": "eslint grammar.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test bindings/node/*_test.js"
+    "test": "node --test bindings/node/binding_test.js"
   }
 }

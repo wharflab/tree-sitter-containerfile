@@ -41,7 +41,7 @@ cargo add tree-sitter-containerfile
 ### Go
 
 ```go
-import tree_sitter_containerfile "github.com/wharflab/tree-sitter-containerfile/bindings/go"
+import containerfile "github.com/wharflab/tree-sitter-containerfile"
 ```
 
 ## Usage

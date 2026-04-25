@@ -14,7 +14,7 @@ export default grammar({
   ],
 
   rules: {
-    source_file: ($) => repeat(seq($._instruction, '\n')),
+    source_file: ($) => seq(repeat(seq($._instruction, '\n')), optional($._instruction)),
 
     _instruction: ($) =>
       choice(
@@ -311,10 +311,8 @@ export default grammar({
     image_spec: ($) =>
       seq(
         field('name', $.image_name),
-        seq(
-          field('tag', optional($.image_tag)),
-          field('digest', optional($.image_digest)),
-        ),
+        field('tag', optional($.image_tag)),
+        field('digest', optional($.image_digest)),
       ),
 
     image_name: ($) =>
