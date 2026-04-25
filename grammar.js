@@ -153,6 +153,7 @@ export default grammar({
     arg_instruction: ($) =>
       seq(
         alias(/[aA][rR][gG]/, 'ARG'),
+        token.immediate(/\s+/),
         field('name', alias(/[a-zA-Z0-9_]+/, $.unquoted_string)),
         optional(
           seq(
