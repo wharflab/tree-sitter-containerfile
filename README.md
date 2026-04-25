@@ -116,6 +116,13 @@ tree-sitter test
 The test suite includes the upstream corpus and integration parsing of the
 real-world Containerfile fixtures in `examples/`.
 
+## Migration Notes
+
+Spaced `ENV` values can span line continuations. Consumers that inspect
+`unquoted_string` children should handle `line_continuation` nodes in addition
+to expansion nodes, because the internal `_spaced_env_value` rule aliases those
+values to `unquoted_string`.
+
 ## Credits
 
 This grammar started from

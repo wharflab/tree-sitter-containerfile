@@ -669,11 +669,8 @@
           "value": "ARG"
         },
         {
-          "type": "IMMEDIATE_TOKEN",
-          "content": {
-            "type": "PATTERN",
-            "value": "\\s+"
-          }
+          "type": "SYMBOL",
+          "name": "_non_newline_whitespace"
         },
         {
           "type": "FIELD",

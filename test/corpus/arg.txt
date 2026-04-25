@@ -46,5 +46,16 @@ ARGfoo
 ---
 
 (source_file
-  (ERROR))
-		
+	(ERROR))
+
+==================
+No newline after keyword
+==================
+
+ARG
+foo
+
+---
+
+(source_file
+	(ERROR))
