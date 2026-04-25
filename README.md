@@ -107,6 +107,8 @@ real-world Containerfile fixtures in `examples/`.
 
 ## License
 
-Repository packaging is licensed under [Apache-2.0](LICENSE). The imported
-grammar and fixtures from Camden Cheek's tree-sitter-dockerfile are licensed
-under [MIT](LICENSE-MIT-CamdenCheek).
+Licensed under [MIT](LICENSE).
+
+This repository includes substantial portions of Camden Cheek's
+tree-sitter-dockerfile grammar and fixtures; its original MIT notice is
+preserved in [LICENSE-MIT-CamdenCheek](LICENSE-MIT-CamdenCheek).

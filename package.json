@@ -7,7 +7,7 @@
     "type": "git",
     "url": "git+https://github.com/wharflab/tree-sitter-containerfile.git"
   },
-  "license": "Apache-2.0 AND MIT",
+  "license": "MIT",
   "main": "bindings/node",
   "types": "bindings/node",
   "keywords": [

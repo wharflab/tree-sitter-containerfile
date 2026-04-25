@@ -2,8 +2,8 @@
 name = "tree-sitter-containerfile"
 description = "A Containerfile and Dockerfile grammar for tree-sitter"
 version = "0.1.0"
-authors = ["WharfLab", "Camden Cheek <camden@ccheek.com>"]
-license = "Apache-2.0 AND MIT"
+authors = ["WharfLab"]
+license = "MIT"
 readme = "README.md"
 keywords = ["incremental", "parsing", "tree-sitter", "containerfile", "dockerfile"]
 categories = ["parser-implementations", "parsing", "text-editors"]
