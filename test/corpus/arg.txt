@@ -36,5 +36,15 @@ ARG foo="bar"
 	(arg_instruction
 		name: (unquoted_string)
 		default: (double_quoted_string)))
-		
 
+==================
+No space after keyword
+==================
+
+ARGfoo
+
+---
+
+(source_file
+  (ERROR))
+		
