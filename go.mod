@@ -1,6 +1,6 @@
 module github.com/wharflab/tree-sitter-containerfile
 
-go 1.23
+go 1.26
 
 require github.com/tree-sitter/go-tree-sitter v0.24.0
 
