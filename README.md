@@ -1,11 +1,22 @@
 # tree-sitter-containerfile
 
-A Containerfile and Dockerfile grammar for [tree-sitter](https://tree-sitter.github.io/).
+A maintained Containerfile and Dockerfile grammar for [tree-sitter](https://tree-sitter.github.io/).
 
-This repository packages the grammar originally published as
-[`camdencheek/tree-sitter-dockerfile`](https://github.com/camdencheek/tree-sitter-dockerfile)
-under the `tree-sitter-containerfile` name, with generated bindings for Node.js,
-Python, Rust, Go, Swift, and C.
+This project is intended to be a reliable, actively maintained grammar for
+modern container build files, with published packages and generated bindings
+for Node.js, Python, Rust, Go, Swift, and C.
+
+## Why This Package
+
+Containerfile and Dockerfile syntax continues to evolve across Docker,
+BuildKit, Podman, and related tooling. This grammar aims to close the gap for
+modern Dockerfile features, keep real-world fixtures parsing cleanly, and ship
+usable packages across the common tree-sitter binding ecosystems.
+
+The historical `tree-sitter-dockerfile` npm package is not a dependable
+installation target: it currently resolves to a `0.0.1-security` placeholder
+release. `tree-sitter-containerfile` is the maintained package name for this
+grammar and its generated artifacts.
 
 ## Installation
 
@@ -105,10 +116,16 @@ tree-sitter test
 The test suite includes the upstream corpus and integration parsing of the
 real-world Containerfile fixtures in `examples/`.
 
+## Credits
+
+This grammar started from
+[`camdencheek/tree-sitter-dockerfile`](https://github.com/camdencheek/tree-sitter-dockerfile).
+The project is being maintained and extended here under the
+`tree-sitter-containerfile` package name.
+
 ## License
 
 Licensed under [MIT](LICENSE).
 
-This repository includes substantial portions of Camden Cheek's
-tree-sitter-dockerfile grammar and fixtures; its original MIT notice is
-preserved in [LICENSE-MIT-CamdenCheek](LICENSE-MIT-CamdenCheek).
+The original MIT notice for the upstream grammar and fixtures is preserved in
+[LICENSE-MIT-CamdenCheek](LICENSE-MIT-CamdenCheek).
