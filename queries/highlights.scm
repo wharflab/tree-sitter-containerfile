@@ -41,7 +41,7 @@
 	(double_quoted_string)
 	(single_quoted_string)
 	(json_string)
-	(heredoc_line)
+	(heredoc_block)
 ] @string
 
 (expansion
@@ -54,5 +54,4 @@
 
 ((variable) @constant
  (#match? @constant "^[A-Z][A-Z_0-9]*$"))
-
 

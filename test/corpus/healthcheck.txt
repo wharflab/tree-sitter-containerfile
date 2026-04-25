@@ -7,7 +7,7 @@ HEALTHCHECK NONE
 ---
 
 (source_file
-	(healthcheck_instruction))
+  (healthcheck_instruction))
 
 ==================
 Custom command
@@ -18,10 +18,9 @@ HEALTHCHECK CMD	echo "test"
 ---
 
 (source_file
-	(healthcheck_instruction
-		(cmd_instruction
-			(shell_command
-				(shell_fragment)))))
+  (healthcheck_instruction
+    (cmd_instruction
+      (shell_command))))
 
 ==================
 With options
@@ -32,10 +31,8 @@ HEALTHCHECK --interval=10s --retries=10 CMD echo "test"
 ---
 
 (source_file
-	(healthcheck_instruction
-		(param)
-		(param)
-		(cmd_instruction
-			(shell_command
-				(shell_fragment)))))
-
+  (healthcheck_instruction
+    (param)
+    (param)
+    (cmd_instruction
+      (shell_command))))
