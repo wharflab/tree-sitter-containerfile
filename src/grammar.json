@@ -1182,8 +1182,13 @@
                 "name": "single_quoted_string"
               },
               {
-                "type": "SYMBOL",
-                "name": "unquoted_string"
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_spaced_env_value"
+                },
+                "named": true,
+                "value": "unquoted_string"
               }
             ]
           }
@@ -1868,6 +1873,83 @@
           }
         ]
       }
+    },
+    "_spaced_env_value": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_spaced_env_value_fragment"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_non_newline_whitespace"
+              }
+            ]
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "required_line_continuation"
+                },
+                "named": true,
+                "value": "line_continuation"
+              },
+              {
+                "type": "REPEAT1",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "_spaced_env_value_fragment"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_non_newline_whitespace"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "_spaced_env_value_fragment": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "IMMEDIATE_TOKEN",
+          "content": {
+            "type": "PATTERN",
+            "value": "[^\\s\\n\\\"'\\\\\\$]+"
+          }
+        },
+        {
+          "type": "IMMEDIATE_TOKEN",
+          "content": {
+            "type": "STRING",
+            "value": "\\ "
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_immediate_expansion"
+        }
+      ]
     },
     "double_quoted_escape_sequence": {
       "type": "IMMEDIATE_TOKEN",

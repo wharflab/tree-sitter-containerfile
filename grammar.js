@@ -283,7 +283,7 @@ export default grammar({
           choice(
             $.double_quoted_string,
             $.single_quoted_string,
-            $.unquoted_string,
+            alias($._spaced_env_value, $.unquoted_string),
           )),
       ),
 
@@ -469,6 +469,24 @@ export default grammar({
           token.immediate('\\ '),
           $._immediate_expansion,
         ),
+      ),
+
+    _spaced_env_value: ($) =>
+      seq(
+        repeat1(choice($._spaced_env_value_fragment, $._non_newline_whitespace)),
+        repeat(
+          seq(
+            alias($.required_line_continuation, $.line_continuation),
+            repeat1(choice($._spaced_env_value_fragment, $._non_newline_whitespace)),
+          ),
+        ),
+      ),
+
+    _spaced_env_value_fragment: ($) =>
+      choice(
+        token.immediate(/[^\s\n\"'\\\$]+/),
+        token.immediate('\\ '),
+        $._immediate_expansion,
       ),
 
     double_quoted_escape_sequence: () => token.immediate(
