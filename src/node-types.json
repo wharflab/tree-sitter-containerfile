@@ -840,6 +840,10 @@
         {
           "type": "expansion",
           "named": true
+        },
+        {
+          "type": "line_continuation",
+          "named": true
         }
       ]
     }
