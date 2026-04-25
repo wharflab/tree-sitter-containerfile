@@ -107,5 +107,5 @@ jobs:
       - name: Check Python distributions
         if: github.event_name == 'pull_request'
         run: |
-          python -m pip install --upgrade twine
+          python -m pip install --upgrade packaging twine
           python -m twine check dist/*
