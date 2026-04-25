@@ -1,0 +1,30 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Set up tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+      - name: Run corpus tests
+        run: tree-sitter test
+      - name: Parse real-world Containerfile fixtures
+        run: tree-sitter parse examples/* --quiet --stat
+      - name: Assert zero parse errors on real-world fixtures
+        run: |
+          for fixture in examples/*; do
+            output=$(tree-sitter parse "$fixture")
+            if echo "$output" | grep -qE '\(ERROR|MISSING'; then
+              echo "$fixture has parse errors:"
+              echo "$output" | grep -E '\(ERROR|MISSING' | head -20
+              exit 1
+            fi
+            echo "$fixture parsed cleanly with no ERROR or MISSING nodes."
+          done
