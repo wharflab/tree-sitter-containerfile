@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tree-sitter-containerfile"
+description = "A Containerfile and Dockerfile grammar for tree-sitter"
+dynamic = ["version"]
+keywords = ["incremental", "parsing", "tree-sitter", "containerfile", "dockerfile"]
+classifiers = [
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Compilers",
+  "Topic :: Text Processing :: Linguistic",
+  "Typing :: Typed",
+]
+authors = [{ name = "WharfLab" }]
+requires-python = ">=3.10"
+license = "MIT"
+readme = "README.md"
+
+[project.urls]
+Homepage = "https://github.com/wharflab/tree-sitter-containerfile"
+
+[project.optional-dependencies]
+core = ["tree-sitter~=0.24"]
+
+[tool.cibuildwheel]
+build = "cp3{10,11,12,13}-*"
+build-frontend = "build"

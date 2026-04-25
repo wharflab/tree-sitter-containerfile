@@ -1,0 +1,34 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Set up tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+      - name: Run corpus tests
+        run: tree-sitter test
+      - name: Parse real-world Containerfile fixtures
+        run: |
+          shopt -s nullglob
+          fixtures=(examples/*)
+          if [ ${#fixtures[@]} -eq 0 ]; then
+            echo "No fixtures under examples/, skipping."
+            exit 0
+          fi
+          failed=0
+          for fixture in "${fixtures[@]}"; do
+            if ! output=$(tree-sitter parse "$fixture" --quiet --stat 2>&1); then
+              echo "::error file=$fixture::parse errors detected"
+              echo "$output" | grep -E '\(ERROR|MISSING' | head -20
+              failed=1
+            fi
+          done
+          exit "$failed"
