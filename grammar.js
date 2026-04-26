@@ -407,10 +407,10 @@ export default grammar({
         //                              |--shell_command--|
         //
         seq($.heredoc_marker, /[ \t]*/),
-        /"[^"\n]*"/,
-        /'[^'\n]*'/,
+        /"([^"\\\n]|\\.)*"/,
+        /'([^'\\\n]|\\.)*'/,
         /[,=-]/,
-        /[^\\\[\n#\s,=-]([^\\\n<]|\\[^ \t\n])*/,
+        /[^\\\[\n#\s,=\-"']([^\\\n<"']|\\[^ \t\n])*/,
         /\\[^\n,=-]/,
         /<[^<]/,
       ),
@@ -453,7 +453,7 @@ export default grammar({
           choice(
             token.immediate(/[^"\n\\\$]+/),
             alias($.double_quoted_escape_sequence, $.escape_sequence),
-            token.immediate(/\$\([^"\n]*\)/),
+            token.immediate(/\$\(/),
             '\\',
             $._immediate_expansion,
           ),
