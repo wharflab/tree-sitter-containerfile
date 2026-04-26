@@ -178,9 +178,12 @@ export default grammar({
       ),
 
     _stopsignal_value: ($) =>
-      seq(
-        choice(/[A-Z0-9]+/, $.expansion),
-        repeat(choice(token.immediate(/[A-Z0-9]+/), $._immediate_expansion)),
+      choice(
+        $.double_quoted_string,
+        seq(
+          choice(/[A-Z0-9+]+/, $.expansion),
+          repeat(choice(token.immediate(/[A-Z0-9+]+/), $._immediate_expansion)),
+        ),
       ),
 
     healthcheck_instruction: ($) =>
@@ -368,8 +371,10 @@ export default grammar({
 
     mount_param_param: () => seq(
       token.immediate(/[^\s=,]+/),
-      token.immediate('='),
-      token.immediate(/[^\s=,]+/),
+      optional(seq(
+        token.immediate('='),
+        token.immediate(/[^\s=,]+/),
+      )),
     ),
 
     image_alias: ($) => seq(
@@ -402,8 +407,10 @@ export default grammar({
         //                              |--shell_command--|
         //
         seq($.heredoc_marker, /[ \t]*/),
+        /"[^"\n]*"/,
+        /'[^'\n]*'/,
         /[,=-]/,
-        /[^\\\[\n#\s,=-][^\\\n<]*/,
+        /[^\\\[\n#\s,=-]([^\\\n<]|\\[^ \t\n])*/,
         /\\[^\n,=-]/,
         /<[^<]/,
       ),
@@ -446,6 +453,7 @@ export default grammar({
           choice(
             token.immediate(/[^"\n\\\$]+/),
             alias($.double_quoted_escape_sequence, $.escape_sequence),
+            token.immediate(/\$\([^"\n]*\)/),
             '\\',
             $._immediate_expansion,
           ),
@@ -472,6 +480,7 @@ export default grammar({
         choice(
           token.immediate(/[^\s\n\"'\\\$]+/),
           token.immediate('\\ '),
+          token.immediate(/\\[^\s\n]/),
           $._immediate_expansion,
         ),
       ),
@@ -491,6 +500,7 @@ export default grammar({
       choice(
         token.immediate(/[^\s\n\"'\\\$]+/),
         token.immediate('\\ '),
+        token.immediate(/\\[^\s\n]/),
         $._immediate_expansion,
       ),
 

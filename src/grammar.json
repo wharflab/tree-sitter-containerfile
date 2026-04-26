@@ -765,39 +765,48 @@
       ]
     },
     "_stopsignal_value": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "PATTERN",
-              "value": "[A-Z0-9]+"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "expansion"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "double_quoted_string"
         },
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "IMMEDIATE_TOKEN",
-                "content": {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
                   "type": "PATTERN",
-                  "value": "[A-Z0-9]+"
+                  "value": "[A-Z0-9+]+"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "expansion"
                 }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "_immediate_expansion"
+              ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "IMMEDIATE_TOKEN",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "[A-Z0-9+]+"
+                    }
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_immediate_expansion"
+                  }
+                ]
               }
-            ]
-          }
+            }
+          ]
         }
       ]
     },
@@ -1557,18 +1566,31 @@
           }
         },
         {
-          "type": "IMMEDIATE_TOKEN",
-          "content": {
-            "type": "STRING",
-            "value": "="
-          }
-        },
-        {
-          "type": "IMMEDIATE_TOKEN",
-          "content": {
-            "type": "PATTERN",
-            "value": "[^\\s=,]+"
-          }
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "IMMEDIATE_TOKEN",
+                  "content": {
+                    "type": "STRING",
+                    "value": "="
+                  }
+                },
+                {
+                  "type": "IMMEDIATE_TOKEN",
+                  "content": {
+                    "type": "PATTERN",
+                    "value": "[^\\s=,]+"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -1659,11 +1681,19 @@
           },
           {
             "type": "PATTERN",
+            "value": "\"[^\"\\n]*\""
+          },
+          {
+            "type": "PATTERN",
+            "value": "'[^'\\n]*'"
+          },
+          {
+            "type": "PATTERN",
             "value": "[,=-]"
           },
           {
             "type": "PATTERN",
-            "value": "[^\\\\\\[\\n#\\s,=-][^\\\\\\n<]*"
+            "value": "[^\\\\\\[\\n#\\s,=-]([^\\\\\\n<]|\\\\[^ \\t\\n])*"
           },
           {
             "type": "PATTERN",
@@ -1803,6 +1833,13 @@
                 "value": "escape_sequence"
               },
               {
+                "type": "IMMEDIATE_TOKEN",
+                "content": {
+                  "type": "PATTERN",
+                  "value": "\\$\\([^\"\\n]*\\)"
+                }
+              },
+              {
                 "type": "STRING",
                 "value": "\\"
               },
@@ -1877,6 +1914,13 @@
             "content": {
               "type": "STRING",
               "value": "\\ "
+            }
+          },
+          {
+            "type": "IMMEDIATE_TOKEN",
+            "content": {
+              "type": "PATTERN",
+              "value": "\\\\[^\\s\\n]"
             }
           },
           {
@@ -1955,6 +1999,13 @@
           "content": {
             "type": "STRING",
             "value": "\\ "
+          }
+        },
+        {
+          "type": "IMMEDIATE_TOKEN",
+          "content": {
+            "type": "PATTERN",
+            "value": "\\\\[^\\s\\n]"
           }
         },
         {

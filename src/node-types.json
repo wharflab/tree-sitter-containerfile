@@ -804,6 +804,10 @@
       "required": false,
       "types": [
         {
+          "type": "double_quoted_string",
+          "named": true
+        },
+        {
           "type": "expansion",
           "named": true
         }
