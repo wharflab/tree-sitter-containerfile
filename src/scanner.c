@@ -31,17 +31,25 @@ void *tree_sitter_containerfile_external_scanner_create() {
     return state;
 }
 
+static void clear_heredocs(scanner_state *state) {
+    for (unsigned i = 0; i < MAX_HEREDOCS; i++) {
+        if (state->heredocs[i]) {
+            free(state->heredocs[i]);
+            state->heredocs[i] = NULL;
+        }
+    }
+
+    state->heredoc_count = 0;
+    state->in_heredoc = false;
+    state->stripping_heredoc = false;
+}
+
 void tree_sitter_containerfile_external_scanner_destroy(void *payload) {
     if (!payload)
         return;
 
     scanner_state *state = payload;
-    for (unsigned i = 0; i < MAX_HEREDOCS; i++) {
-        if (state->heredocs[i]) {
-            free(state->heredocs[i]);
-        }
-    }
-
+    clear_heredocs(state);
     free(state);
 }
 
@@ -78,16 +86,7 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
                                                          const char *buffer,
                                                          unsigned length) {
     scanner_state *state = payload;
-    // Free all current heredocs to avoid leaking memory when we overwrite the
-    // array later.
-    for (unsigned i = 0; i < state->heredoc_count; i++) {
-        free(state->heredocs[i]);
-        state->heredocs[i] = NULL;
-    }
-
-    state->in_heredoc = false;
-    state->stripping_heredoc = false;
-    state->heredoc_count = 0;
+    clear_heredocs(state);
 
     if (length < 2) {
         return;
@@ -124,14 +123,59 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
     }
 }
 
-static void skip_whitespace(TSLexer *lexer) {
-    while (lexer->lookahead != '\0' && lexer->lookahead != '\n' &&
-           iswspace(lexer->lookahead))
+static bool is_inline_space(int32_t c) {
+    return c != '\0' && c != '\n' && c != '\r' && iswspace(c);
+}
+
+static bool is_line_end(TSLexer *lexer) {
+    return lexer->lookahead == '\n' || lexer->lookahead == '\r' ||
+           lexer->eof(lexer);
+}
+
+static void skip_inline_whitespace(TSLexer *lexer) {
+    while (is_inline_space(lexer->lookahead))
         lexer->advance(lexer, true);
 }
 
+static void skip_leading_tabs(TSLexer *lexer) {
+    while (lexer->lookahead == '\t')
+        lexer->advance(lexer, true);
+}
+
+static void push_heredoc(scanner_state *state, char *delimiter) {
+    if (state->heredoc_count == 0) {
+        state->heredoc_count = 1;
+        state->heredocs[0] = delimiter;
+        state->stripping_heredoc = delimiter[0] == '-';
+    } else if (state->heredoc_count >= MAX_HEREDOCS) {
+        free(delimiter);
+    } else {
+        state->heredocs[state->heredoc_count++] = delimiter;
+    }
+}
+
+static void pop_heredoc(scanner_state *state) {
+    if (state->heredoc_count == 0)
+        return;
+
+    free(state->heredocs[0]);
+
+    for (unsigned i = 1; i < state->heredoc_count; i++) {
+        state->heredocs[i - 1] = state->heredocs[i];
+    }
+    state->heredocs[state->heredoc_count - 1] = NULL;
+    state->heredoc_count--;
+
+    if (state->heredoc_count > 0) {
+        state->stripping_heredoc = state->heredocs[0][0] == '-';
+    } else {
+        state->in_heredoc = false;
+        state->stripping_heredoc = false;
+    }
+}
+
 static bool scan_marker(scanner_state *state, TSLexer *lexer) {
-    skip_whitespace(lexer);
+    skip_inline_whitespace(lexer);
 
     if (lexer->lookahead != '<')
         return false;
@@ -181,9 +225,9 @@ static bool scan_marker(scanner_state *state, TSLexer *lexer) {
         lexer->advance(lexer, false);
 
         // If we run out of space, stop recording the delimiter but keep
-        // advancing the lexer to ensure that we at least parse the marker
-        // correctly. Reserve two bytes: one for the strip indicator and
-        // one for the terminating null byte.
+        // advancing the lexer so the failed external token leaves the parser
+        // at a consistent error point. Reserve two bytes: one for the strip
+        // indicator and one for the terminating null byte.
         if (del_idx >= DEL_SPACE - 2) {
             del_idx = 0;
         }
@@ -196,10 +240,8 @@ static bool scan_marker(scanner_state *state, TSLexer *lexer) {
         lexer->advance(lexer, false);
     }
 
-    if (del_idx == 0) {
-        lexer->result_symbol = HEREDOC_MARKER;
-        return true;
-    }
+    if (del_idx <= 1)
+        return false;
 
     delimiter[0] = stripping ? '-' : ' ';
     delimiter[del_idx] = '\0';
@@ -211,15 +253,7 @@ static bool scan_marker(scanner_state *state, TSLexer *lexer) {
         return false;
     memcpy(del_copy, delimiter, del_idx + 1);
 
-    if (state->heredoc_count == 0) {
-        state->heredoc_count = 1;
-        state->heredocs[0] = del_copy;
-        state->stripping_heredoc = stripping;
-    } else if (state->heredoc_count >= MAX_HEREDOCS) {
-        free(del_copy);
-    } else {
-        state->heredocs[state->heredoc_count++] = del_copy;
-    }
+    push_heredoc(state, del_copy);
 
     lexer->result_symbol = HEREDOC_MARKER;
     return true;
@@ -235,7 +269,7 @@ static bool scan_content(scanner_state *state, TSLexer *lexer,
     state->in_heredoc = true;
 
     if (state->stripping_heredoc) {
-        skip_whitespace(lexer);
+        skip_leading_tabs(lexer);
     }
 
     if (valid_symbols[HEREDOC_END]) {
@@ -248,25 +282,10 @@ static bool scan_content(scanner_state *state, TSLexer *lexer,
             delim_idx++;
         }
 
-        // Check if the entire string matched.
-        if (state->heredocs[0][delim_idx] == '\0') {
+        // Check if the entire delimiter matched as a complete line.
+        if (state->heredocs[0][delim_idx] == '\0' && is_line_end(lexer)) {
             lexer->result_symbol = HEREDOC_END;
-
-            // Shift the first heredoc off the list.
-            free(state->heredocs[0]);
-
-            for (unsigned i = 1; i < state->heredoc_count; i++) {
-                state->heredocs[i - 1] = state->heredocs[i];
-            }
-            state->heredocs[state->heredoc_count - 1] = NULL;
-            state->heredoc_count--;
-
-            if (state->heredoc_count > 0) {
-                state->stripping_heredoc = state->heredocs[0][0] == '-';
-            } else {
-                state->in_heredoc = false;
-            }
-
+            pop_heredoc(state);
             return true;
         }
     }
@@ -311,6 +330,14 @@ bool tree_sitter_containerfile_external_scanner_scan(void *payload, TSLexer *lex
     // necessary to avoid a conflict in the grammar since a normal line break
     // could either be the start of a heredoc or the end of an instruction.
     if (valid_symbols[HEREDOC_NL]) {
+        if (state->heredoc_count > 0 && lexer->lookahead == '\r') {
+            lexer->result_symbol = HEREDOC_NL;
+            lexer->advance(lexer, false);
+            if (lexer->lookahead == '\n')
+                lexer->advance(lexer, false);
+            return true;
+        }
+
         if (state->heredoc_count > 0 && lexer->lookahead == '\n') {
             lexer->result_symbol = HEREDOC_NL;
             lexer->advance(lexer, false);
