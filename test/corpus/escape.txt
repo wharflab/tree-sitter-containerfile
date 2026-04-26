@@ -1,0 +1,103 @@
+==================
+Backtick line continuation
+==================
+# escape=`
+RUN echo "test" `
+  "foo"
+
+---
+
+(source_file
+  (comment)
+  (run_instruction
+    (shell_command
+      (line_continuation))))
+
+==================
+Backslash path with backtick escape
+==================
+# escape=`
+COPY testfile.txt c:\
+RUN dir c:\
+
+---
+
+(source_file
+  (comment)
+  (copy_instruction
+    (path)
+    (path))
+  (run_instruction
+    (shell_command)))
+
+==================
+Syntax before escape
+==================
+# syntax=docker/dockerfile:1
+# escape=`
+RUN echo a `
+  b
+
+---
+
+(source_file
+  (comment)
+  (comment)
+  (run_instruction
+    (shell_command
+      (line_continuation))))
+
+==================
+Backtick quoted escape sequences
+==================
+# escape=`
+ENV DOUBLE="say `"hi`""
+ENV SINGLE='it`'s'
+
+---
+
+(source_file
+  (comment)
+  (env_instruction
+    (env_pair
+      name: (unquoted_string)
+      value: (double_quoted_string
+        (escape_sequence)
+        (escape_sequence))))
+  (env_instruction
+    (env_pair
+      name: (unquoted_string)
+      value: (single_quoted_string
+        (escape_sequence)))))
+
+==================
+Invalid escape value closes directive prologue
+==================
+# escape=`extra
+RUN echo a \
+  b
+
+---
+
+(source_file
+  (comment)
+  (run_instruction
+    (shell_command
+      (line_continuation))))
+
+==================
+Invalid syntax directive closes directive prologue
+==================
+# syntax
+# escape=`
+RUN echo a \
+  b
+
+---
+
+(source_file
+  (comment)
+  (comment)
+  (run_instruction
+    (shell_command
+      (line_continuation))))

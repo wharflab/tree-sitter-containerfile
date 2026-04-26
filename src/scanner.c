@@ -11,11 +11,19 @@
 typedef struct {
     bool in_heredoc;
     bool stripping_heredoc;
+    bool directive_allowed;
+    bool escape_seen;
+    bool at_line_start;
+    int32_t escape_char;
     unsigned heredoc_count;
     char *heredocs[MAX_HEREDOCS];
 } scanner_state;
 
 enum TokenType {
+    COMMENT,
+    LINE_CONTINUATION,
+    REQUIRED_LINE_CONTINUATION,
+    NEWLINE,
     HEREDOC_MARKER,
     HEREDOC_LINE,
     HEREDOC_END,
@@ -28,6 +36,9 @@ void *tree_sitter_containerfile_external_scanner_create() {
     if (!state)
         return NULL;
     memset(state, 0, sizeof(scanner_state));
+    state->directive_allowed = true;
+    state->at_line_start = true;
+    state->escape_char = '\\';
     return state;
 }
 
@@ -60,6 +71,10 @@ unsigned tree_sitter_containerfile_external_scanner_serialize(void *payload,
     unsigned pos = 0;
     buffer[pos++] = state->in_heredoc;
     buffer[pos++] = state->stripping_heredoc;
+    buffer[pos++] = state->directive_allowed;
+    buffer[pos++] = state->escape_seen;
+    buffer[pos++] = state->at_line_start;
+    buffer[pos++] = (char)state->escape_char;
 
     for (unsigned i = 0; i < state->heredoc_count; i++) {
         // Add the ending null byte to the length since we'll have to copy it as
@@ -88,12 +103,25 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
     scanner_state *state = payload;
     clear_heredocs(state);
 
-    if (length < 2) {
+    state->directive_allowed = true;
+    state->escape_seen = false;
+    state->at_line_start = true;
+    state->escape_char = '\\';
+
+    if (length < 6) {
         return;
     } else {
         unsigned pos = 0;
         state->in_heredoc = buffer[pos++];
         state->stripping_heredoc = buffer[pos++];
+
+        state->directive_allowed = buffer[pos++];
+        state->escape_seen = buffer[pos++];
+        state->at_line_start = buffer[pos++];
+        state->escape_char = buffer[pos++];
+        if (state->escape_char != '\\' && state->escape_char != '`') {
+            state->escape_char = '\\';
+        }
 
         unsigned heredoc_count = 0;
         for (unsigned i = 0; i < MAX_HEREDOCS && pos < length; i++) {
@@ -125,6 +153,12 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
 
 static bool is_inline_space(int32_t c) {
     return c != '\0' && c != '\n' && c != '\r' && iswspace(c);
+}
+
+static bool is_directive_space(int32_t c) { return c == ' ' || c == '\t'; }
+
+static int32_t to_lower_ascii(int32_t c) {
+    return c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c;
 }
 
 static bool is_line_end(TSLexer *lexer) {
@@ -174,6 +208,180 @@ static void pop_heredoc(scanner_state *state) {
     }
 }
 
+static void close_directive_prologue(scanner_state *state) {
+    state->directive_allowed = false;
+}
+
+static bool scan_newline(scanner_state *state, TSLexer *lexer, int symbol) {
+    if (lexer->lookahead == '\r') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '\n')
+            lexer->advance(lexer, false);
+    } else if (lexer->lookahead == '\n') {
+        lexer->advance(lexer, false);
+    } else {
+        return false;
+    }
+
+    if (state->directive_allowed) {
+        close_directive_prologue(state);
+    }
+
+    state->at_line_start = true;
+    if (symbol == HEREDOC_NL) {
+        state->in_heredoc = true;
+    }
+    lexer->result_symbol = symbol;
+    return true;
+}
+
+static bool scan_line_continuation(scanner_state *state, TSLexer *lexer,
+                                   const bool *valid_symbols) {
+    if (lexer->lookahead != state->escape_char &&
+        !is_inline_space(lexer->lookahead)) {
+        return false;
+    }
+
+    skip_inline_whitespace(lexer);
+
+    if (lexer->lookahead != state->escape_char)
+        return false;
+
+    lexer->advance(lexer, false);
+
+    if (valid_symbols[REQUIRED_LINE_CONTINUATION] &&
+        (lexer->lookahead == '\n' || lexer->lookahead == '\r')) {
+        close_directive_prologue(state);
+        state->at_line_start = true;
+        lexer->result_symbol = REQUIRED_LINE_CONTINUATION;
+
+        if (lexer->lookahead == '\r') {
+            lexer->advance(lexer, false);
+            if (lexer->lookahead == '\n')
+                lexer->advance(lexer, false);
+        } else {
+            lexer->advance(lexer, false);
+        }
+        return true;
+    }
+
+    if (!valid_symbols[LINE_CONTINUATION])
+        return false;
+
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t')
+        lexer->advance(lexer, false);
+
+    if (lexer->lookahead != '\n' && lexer->lookahead != '\r')
+        return false;
+
+    close_directive_prologue(state);
+    state->at_line_start = true;
+    lexer->result_symbol = LINE_CONTINUATION;
+
+    if (lexer->lookahead == '\r') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '\n')
+            lexer->advance(lexer, false);
+    } else {
+        lexer->advance(lexer, false);
+    }
+
+    return true;
+}
+
+static bool is_parser_directive(scanner_state *state, const char *key,
+                                unsigned key_len, int32_t value,
+                                unsigned value_len) {
+    if (key_len == 6 && memcmp(key, "escape", 6) == 0) {
+        if (value_len != 1 || state->escape_seen ||
+            (value != '\\' && value != '`')) {
+            return false;
+        }
+        state->escape_char = value;
+        state->escape_seen = true;
+        return true;
+    }
+
+    return value_len > 0 &&
+           ((key_len == 6 && memcmp(key, "syntax", 6) == 0) ||
+            (key_len == 5 && memcmp(key, "check", 5) == 0));
+}
+
+static bool scan_comment(scanner_state *state, TSLexer *lexer) {
+    if (lexer->lookahead != '#')
+        return false;
+
+    bool may_be_directive = state->directive_allowed &&
+                            state->at_line_start &&
+                            lexer->get_column(lexer) == 0;
+    bool directive = false;
+    char key[16];
+    unsigned key_len = 0;
+    int32_t value = 0;
+    unsigned value_len = 0;
+
+    lexer->advance(lexer, false);
+
+    if (may_be_directive) {
+        while (is_directive_space(lexer->lookahead))
+            lexer->advance(lexer, false);
+
+        while ((lexer->lookahead >= 'a' && lexer->lookahead <= 'z') ||
+               (lexer->lookahead >= 'A' && lexer->lookahead <= 'Z')) {
+            if (key_len < sizeof(key)) {
+                key[key_len++] = (char)to_lower_ascii(lexer->lookahead);
+            }
+            lexer->advance(lexer, false);
+        }
+
+        while (is_directive_space(lexer->lookahead))
+            lexer->advance(lexer, false);
+
+        if (key_len < sizeof(key) && lexer->lookahead == '=') {
+            lexer->advance(lexer, false);
+            while (is_directive_space(lexer->lookahead))
+                lexer->advance(lexer, false);
+
+            while (!is_line_end(lexer) &&
+                   !is_directive_space(lexer->lookahead)) {
+                if (value_len == 0) {
+                    value = lexer->lookahead;
+                }
+                value_len++;
+                lexer->advance(lexer, false);
+            }
+        }
+    }
+
+    while (!is_line_end(lexer)) {
+        lexer->advance(lexer, false);
+    }
+
+    bool consumed_newline = false;
+    if (lexer->lookahead == '\r') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '\n')
+            lexer->advance(lexer, false);
+        consumed_newline = true;
+    } else if (lexer->lookahead == '\n') {
+        lexer->advance(lexer, false);
+        consumed_newline = true;
+    }
+
+    if (may_be_directive && key_len < sizeof(key)) {
+        directive =
+            is_parser_directive(state, key, key_len, value, value_len);
+    }
+
+    if (!directive && state->directive_allowed) {
+        close_directive_prologue(state);
+    }
+
+    state->at_line_start = consumed_newline;
+    lexer->result_symbol = COMMENT;
+    return true;
+}
+
 static bool scan_marker(scanner_state *state, TSLexer *lexer) {
     skip_inline_whitespace(lexer);
 
@@ -184,6 +392,9 @@ static bool scan_marker(scanner_state *state, TSLexer *lexer) {
     if (lexer->lookahead != '<')
         return false;
     lexer->advance(lexer, false);
+
+    close_directive_prologue(state);
+    state->at_line_start = false;
 
     bool stripping = false;
     if (lexer->lookahead == '-') {
@@ -318,39 +529,44 @@ bool tree_sitter_containerfile_external_scanner_scan(void *payload, TSLexer *lex
                                                   const bool *valid_symbols) {
     scanner_state *state = payload;
 
-    if (valid_symbols[ERROR_SENTINEL]) {
-        if (state->in_heredoc) {
-            return scan_content(state, lexer, valid_symbols);
-        } else {
-            return scan_marker(state, lexer);
-        }
+    if (valid_symbols[ERROR_SENTINEL] && state->in_heredoc) {
+        return scan_content(state, lexer, valid_symbols);
+    }
+
+    if (state->in_heredoc &&
+        (valid_symbols[HEREDOC_LINE] || valid_symbols[HEREDOC_END])) {
+        return scan_content(state, lexer, valid_symbols);
+    }
+
+    if (valid_symbols[REQUIRED_LINE_CONTINUATION] ||
+        valid_symbols[LINE_CONTINUATION]) {
+        if (scan_line_continuation(state, lexer, valid_symbols))
+            return true;
+    }
+
+    if (valid_symbols[COMMENT] && scan_comment(state, lexer)) {
+        return true;
+    }
+
+    if (valid_symbols[HEREDOC_MARKER] && scan_marker(state, lexer)) {
+        return true;
     }
 
     // HEREDOC_NL only matches a linebreak if there are open heredocs. This is
     // necessary to avoid a conflict in the grammar since a normal line break
     // could either be the start of a heredoc or the end of an instruction.
     if (valid_symbols[HEREDOC_NL]) {
-        if (state->heredoc_count > 0 && lexer->lookahead == '\r') {
-            lexer->result_symbol = HEREDOC_NL;
-            lexer->advance(lexer, false);
-            if (lexer->lookahead == '\n')
-                lexer->advance(lexer, false);
-            return true;
-        }
-
-        if (state->heredoc_count > 0 && lexer->lookahead == '\n') {
-            lexer->result_symbol = HEREDOC_NL;
-            lexer->advance(lexer, false);
-            return true;
+        if (state->heredoc_count > 0) {
+            return scan_newline(state, lexer, HEREDOC_NL);
         }
     }
 
-    if (valid_symbols[HEREDOC_MARKER]) {
+    if (valid_symbols[NEWLINE] && scan_newline(state, lexer, NEWLINE)) {
+        return true;
+    }
+
+    if (valid_symbols[ERROR_SENTINEL]) {
         return scan_marker(state, lexer);
-    }
-
-    if (valid_symbols[HEREDOC_LINE] || valid_symbols[HEREDOC_END]) {
-        return scan_content(state, lexer, valid_symbols);
     }
 
     return false;
