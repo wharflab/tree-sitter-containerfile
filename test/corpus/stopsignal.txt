@@ -32,6 +32,17 @@ STOPSIGNAL SIGRTMIN+3
   (stopsignal_instruction))
 
 ==================
+Real-time max signal with offset
+==================
+
+STOPSIGNAL SIGRTMAX-1
+
+---
+
+(source_file
+  (stopsignal_instruction))
+
+==================
 Quoted signal name
 ==================
 
