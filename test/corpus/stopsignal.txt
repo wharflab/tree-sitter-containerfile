@@ -20,6 +20,29 @@ STOPSIGNAL SIGKILL
 (source_file
   (stopsignal_instruction))
 
+==================
+Real-time signal with offset
+==================
+
+STOPSIGNAL SIGRTMIN+3
+
+---
+
+(source_file
+  (stopsignal_instruction))
+
+==================
+Quoted signal name
+==================
+
+STOPSIGNAL "SIGINT"
+
+---
+
+(source_file
+  (stopsignal_instruction
+    (double_quoted_string)))
+
 =========================================================
 Signal value with expansions
 =========================================================

@@ -89,6 +89,37 @@ run --mount=type=secret,id=aws,target=/root/.aws/credentials \
     (shell_command)))
 
 ==================
+Run with valueless mount option
+==================
+
+RUN --mount=type=bind,source=rewrites,target=/rewrites,readonly \
+  ./striptests
+
+---
+
+(source_file
+  (run_instruction
+    (mount_param
+      (mount_param_param)
+      (mount_param_param)
+      (mount_param_param)
+      (mount_param_param))
+    (line_continuation)
+    (shell_command)))
+
+==================
+Run with hash inside quoted shell fragment
+==================
+
+RUN echo "#! /bin/bash\n\n# script to activate the environment" > ~/.bashrc
+
+---
+
+(source_file
+  (run_instruction
+    (shell_command)))
+
+==================
 Run with heredoc
 ==================
 
