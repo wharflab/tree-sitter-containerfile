@@ -386,3 +386,62 @@ EOF
     (path)
     (heredoc_block
       (heredoc_end))))
+
+==================
+Heredoc end must match full line
+==================
+
+FROM scratch
+
+COPY <<EOF file
+first
+EOF_SUFFIX
+second
+EOF
+
+---
+
+(source_file
+  (from_instruction
+    (image_spec
+      (image_name)))
+  (copy_instruction
+    (path
+      (heredoc_marker))
+    (path)
+    (heredoc_block
+      (heredoc_end))))
+
+==================
+Chomped heredoc strips tabs only
+==================
+
+FROM scratch
+
+COPY <<-EOF file
+	body
+	EOF
+
+COPY <<-EOF file
+  body
+  EOF
+EOF
+
+---
+
+(source_file
+  (from_instruction
+    (image_spec
+      (image_name)))
+  (copy_instruction
+    (path
+      (heredoc_marker))
+    (path)
+    (heredoc_block
+      (heredoc_end)))
+  (copy_instruction
+    (path
+      (heredoc_marker))
+    (path)
+    (heredoc_block
+      (heredoc_end))))
