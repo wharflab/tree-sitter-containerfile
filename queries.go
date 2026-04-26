@@ -10,6 +10,9 @@ import (
 //go:embed queries/highlights.scm
 var HighlightsQuery string
 
+//go:embed queries/injections.scm
+var InjectionsQuery string
+
 // GetLanguage returns the tree-sitter Language for Containerfile.
 func GetLanguage() *sitter.Language {
 	return sitter.NewLanguage(binding.Language())
@@ -18,4 +21,9 @@ func GetLanguage() *sitter.Language {
 // GetHighlightsQuery compiles and returns the bundled highlights query.
 func GetHighlightsQuery() (*sitter.Query, *sitter.QueryError) {
 	return sitter.NewQuery(GetLanguage(), HighlightsQuery)
+}
+
+// GetInjectionsQuery compiles and returns the bundled injections query.
+func GetInjectionsQuery() (*sitter.Query, *sitter.QueryError) {
+	return sitter.NewQuery(GetLanguage(), InjectionsQuery)
 }
