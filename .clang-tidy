@@ -12,6 +12,4 @@ Checks: >
   -bugprone-signed-char-misuse,
   -cert-str34-c
 WarningsAsErrors: '*'
-HeaderFilterRegex: '.*'
-ExcludeHeaderFilterRegex: '.*/src/tree_sitter/.*'
 FormatStyle: file
