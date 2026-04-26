@@ -2050,33 +2050,15 @@
     "double_quoted_escape_sequence": {
       "type": "IMMEDIATE_TOKEN",
       "content": {
-        "type": "CHOICE",
-        "members": [
-          {
-            "type": "STRING",
-            "value": "\\\\"
-          },
-          {
-            "type": "STRING",
-            "value": "\\\""
-          }
-        ]
+        "type": "PATTERN",
+        "value": "[\\\\`][\\\\`\"]"
       }
     },
     "single_quoted_escape_sequence": {
       "type": "IMMEDIATE_TOKEN",
       "content": {
-        "type": "CHOICE",
-        "members": [
-          {
-            "type": "STRING",
-            "value": "\\\\"
-          },
-          {
-            "type": "STRING",
-            "value": "\\'"
-          }
-        ]
+        "type": "PATTERN",
+        "value": "[\\\\`][\\\\`']"
       }
     },
     "_non_newline_whitespace": {

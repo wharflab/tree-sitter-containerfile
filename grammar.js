@@ -520,17 +520,11 @@ export default grammar({
       ),
 
     double_quoted_escape_sequence: () => token.immediate(
-      choice(
-        '\\\\',
-        '\\"',
-      ),
+      /[\\`][\\`"]/,
     ),
 
     single_quoted_escape_sequence: () => token.immediate(
-      choice(
-        '\\\\',
-        '\\\'',
-      ),
+      /[\\`][\\`']/,
     ),
 
     _non_newline_whitespace: () => token.immediate(/[\t ]+/),

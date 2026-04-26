@@ -12,7 +12,6 @@ typedef struct {
     bool in_heredoc;
     bool stripping_heredoc;
     bool directive_allowed;
-    bool previous_parser_directive;
     bool escape_seen;
     bool at_line_start;
     int32_t escape_char;
@@ -73,7 +72,6 @@ unsigned tree_sitter_containerfile_external_scanner_serialize(void *payload,
     buffer[pos++] = state->in_heredoc;
     buffer[pos++] = state->stripping_heredoc;
     buffer[pos++] = state->directive_allowed;
-    buffer[pos++] = state->previous_parser_directive;
     buffer[pos++] = state->escape_seen;
     buffer[pos++] = state->at_line_start;
     buffer[pos++] = (char)state->escape_char;
@@ -106,7 +104,6 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
     clear_heredocs(state);
 
     state->directive_allowed = true;
-    state->previous_parser_directive = false;
     state->escape_seen = false;
     state->at_line_start = true;
     state->escape_char = '\\';
@@ -118,9 +115,8 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
         state->in_heredoc = buffer[pos++];
         state->stripping_heredoc = buffer[pos++];
 
-        if (length >= 7) {
+        if (length >= 6) {
             state->directive_allowed = buffer[pos++];
-            state->previous_parser_directive = buffer[pos++];
             state->escape_seen = buffer[pos++];
             state->at_line_start = buffer[pos++];
             state->escape_char = buffer[pos++];
@@ -216,7 +212,6 @@ static void pop_heredoc(scanner_state *state) {
 
 static void close_directive_prologue(scanner_state *state) {
     state->directive_allowed = false;
-    state->previous_parser_directive = false;
 }
 
 static bool scan_newline(scanner_state *state, TSLexer *lexer, int symbol) {
@@ -230,10 +225,8 @@ static bool scan_newline(scanner_state *state, TSLexer *lexer, int symbol) {
         return false;
     }
 
-    if (state->directive_allowed && !state->previous_parser_directive) {
+    if (state->directive_allowed) {
         close_directive_prologue(state);
-    } else {
-        state->previous_parser_directive = false;
     }
 
     state->at_line_start = true;
@@ -373,9 +366,7 @@ static bool scan_comment(scanner_state *state, TSLexer *lexer) {
             is_parser_directive(state, key, key_len, value, valid_value);
     }
 
-    if (directive) {
-        state->previous_parser_directive = false;
-    } else if (state->directive_allowed) {
+    if (!directive && state->directive_allowed) {
         close_directive_prologue(state);
     }
 
