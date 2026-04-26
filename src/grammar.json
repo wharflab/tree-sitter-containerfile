@@ -779,7 +779,7 @@
               "members": [
                 {
                   "type": "PATTERN",
-                  "value": "[A-Z0-9+]+"
+                  "value": "[A-Z0-9+-]+"
                 },
                 {
                   "type": "SYMBOL",
@@ -796,7 +796,7 @@
                     "type": "IMMEDIATE_TOKEN",
                     "content": {
                       "type": "PATTERN",
-                      "value": "[A-Z0-9+]+"
+                      "value": "[A-Z0-9+-]+"
                     }
                   },
                   {

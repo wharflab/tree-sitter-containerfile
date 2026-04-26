@@ -181,8 +181,8 @@ export default grammar({
       choice(
         $.double_quoted_string,
         seq(
-          choice(/[A-Z0-9+]+/, $.expansion),
-          repeat(choice(token.immediate(/[A-Z0-9+]+/), $._immediate_expansion)),
+          choice(/[A-Z0-9+-]+/, $.expansion),
+          repeat(choice(token.immediate(/[A-Z0-9+-]+/), $._immediate_expansion)),
         ),
       ),
 
