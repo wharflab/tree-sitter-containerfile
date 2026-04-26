@@ -1,0 +1,31 @@
+name: Clang-Tidy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/scanner.c
+      - .clang-tidy
+      - .github/workflows/clang-tidy.yml
+  pull_request:
+    paths:
+      - src/scanner.c
+      - .clang-tidy
+      - .github/workflows/clang-tidy.yml
+
+jobs:
+  scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy
+      - name: Show clang-tidy version
+        run: clang-tidy --version
+      - name: Verify clang-tidy config
+        run: clang-tidy --verify-config
+      - name: Run clang-tidy on scanner
+        run: clang-tidy src/scanner.c -- -std=c11 -Isrc
