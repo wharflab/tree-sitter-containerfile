@@ -108,21 +108,19 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
     state->at_line_start = true;
     state->escape_char = '\\';
 
-    if (length < 2) {
+    if (length < 6) {
         return;
     } else {
         unsigned pos = 0;
         state->in_heredoc = buffer[pos++];
         state->stripping_heredoc = buffer[pos++];
 
-        if (length >= 6) {
-            state->directive_allowed = buffer[pos++];
-            state->escape_seen = buffer[pos++];
-            state->at_line_start = buffer[pos++];
-            state->escape_char = buffer[pos++];
-            if (state->escape_char != '\\' && state->escape_char != '`') {
-                state->escape_char = '\\';
-            }
+        state->directive_allowed = buffer[pos++];
+        state->escape_seen = buffer[pos++];
+        state->at_line_start = buffer[pos++];
+        state->escape_char = buffer[pos++];
+        if (state->escape_char != '\\' && state->escape_char != '`') {
+            state->escape_char = '\\';
         }
 
         unsigned heredoc_count = 0;
@@ -239,6 +237,11 @@ static bool scan_newline(scanner_state *state, TSLexer *lexer, int symbol) {
 
 static bool scan_line_continuation(scanner_state *state, TSLexer *lexer,
                                    const bool *valid_symbols) {
+    if (lexer->lookahead != state->escape_char &&
+        !is_inline_space(lexer->lookahead)) {
+        return false;
+    }
+
     skip_inline_whitespace(lexer);
 
     if (lexer->lookahead != state->escape_char)
@@ -288,9 +291,9 @@ static bool scan_line_continuation(scanner_state *state, TSLexer *lexer,
 
 static bool is_parser_directive(scanner_state *state, const char *key,
                                 unsigned key_len, int32_t value,
-                                bool valid_value) {
+                                unsigned value_len) {
     if (key_len == 6 && memcmp(key, "escape", 6) == 0) {
-        if (!valid_value || state->escape_seen ||
+        if (value_len != 1 || state->escape_seen ||
             (value != '\\' && value != '`')) {
             return false;
         }
@@ -299,8 +302,9 @@ static bool is_parser_directive(scanner_state *state, const char *key,
         return true;
     }
 
-    return (key_len == 6 && memcmp(key, "syntax", 6) == 0) ||
-           (key_len == 5 && memcmp(key, "check", 5) == 0);
+    return value_len > 0 &&
+           ((key_len == 6 && memcmp(key, "syntax", 6) == 0) ||
+            (key_len == 5 && memcmp(key, "check", 5) == 0));
 }
 
 static bool scan_comment(scanner_state *state, TSLexer *lexer) {
@@ -314,7 +318,7 @@ static bool scan_comment(scanner_state *state, TSLexer *lexer) {
     char key[16];
     unsigned key_len = 0;
     int32_t value = 0;
-    bool valid_value = false;
+    unsigned value_len = 0;
 
     lexer->advance(lexer, false);
 
@@ -338,9 +342,12 @@ static bool scan_comment(scanner_state *state, TSLexer *lexer) {
             while (is_directive_space(lexer->lookahead))
                 lexer->advance(lexer, false);
 
-            value = lexer->lookahead;
-            if (!is_line_end(lexer)) {
-                valid_value = true;
+            while (!is_line_end(lexer) &&
+                   !is_directive_space(lexer->lookahead)) {
+                if (value_len == 0) {
+                    value = lexer->lookahead;
+                }
+                value_len++;
                 lexer->advance(lexer, false);
             }
         }
@@ -363,7 +370,7 @@ static bool scan_comment(scanner_state *state, TSLexer *lexer) {
 
     if (may_be_directive && key_len < sizeof(key)) {
         directive =
-            is_parser_directive(state, key, key_len, value, valid_value);
+            is_parser_directive(state, key, key_len, value, value_len);
     }
 
     if (!directive && state->directive_allowed) {
