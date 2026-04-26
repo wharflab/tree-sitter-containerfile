@@ -60,5 +60,6 @@ USER a: b
 
 (source_file
   (user_instruction
-    (unquoted_string))
-  (ERROR))
+    (unquoted_string)
+    (ERROR)
+    (unquoted_string)))

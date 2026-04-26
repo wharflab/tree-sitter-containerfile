@@ -4,8 +4,12 @@
 export default grammar({
   name: 'containerfile',
 
-  extras: ($) => [/\s+/, $.line_continuation, $.comment],
+  extras: ($) => [/[ \t\r\f]+/, $.line_continuation, $.comment],
   externals: ($) => [
+    $.comment,
+    $.line_continuation,
+    $.required_line_continuation,
+    $._newline,
     $.heredoc_marker,
     $._heredoc_line,
     $.heredoc_end,
@@ -14,7 +18,17 @@ export default grammar({
   ],
 
   rules: {
-    source_file: ($) => seq(repeat(seq($._instruction, '\n')), optional($._instruction)),
+    source_file: ($) =>
+      seq(
+        repeat($._newline),
+        optional(
+          seq(
+            $._instruction,
+            repeat(seq(repeat1($._newline), $._instruction)),
+            repeat($._newline),
+          ),
+        ),
+      ),
 
     _instruction: ($) =>
       choice(
@@ -407,17 +421,15 @@ export default grammar({
         //                              |--shell_command--|
         //
         seq($.heredoc_marker, /[ \t]*/),
-        /"([^"\\\n]|\\.)*"/,
-        /'([^'\\\n]|\\.)*'/,
+        /"([^"\\`\n]|[\\`].)*"/,
+        /'([^'\\`\n]|[\\`].)*'/,
         /[,=-]/,
-        /[^\\\[\n#\s,=\-"']([^\\\n<"']|\\[^ \t\n])*/,
-        /\\[^\n,=-]/,
+        /[^\\`\[\n#\s,=\-"']([^\\`\n<"']|[\\`][^ \t\n])*/,
+        /[\\`][^\n,=-]/,
+        /[\\`]/,
         /<[^<]/,
       ),
     ),
-
-    line_continuation: () => /\\[ \t]*\n/,
-    required_line_continuation: () => '\\\n',
 
     json_string_array: ($) =>
       seq(
@@ -435,8 +447,9 @@ export default grammar({
       '"',
       repeat(
         choice(
-          token.immediate(/[^"\\]+/),
+          token.immediate(/[^"\\`\n]+/),
           alias($.json_escape_sequence, $.escape_sequence),
+          token.immediate('`'),
         ),
       ),
       '"',
@@ -451,10 +464,11 @@ export default grammar({
         '"',
         repeat(
           choice(
-            token.immediate(/[^"\n\\\$]+/),
+            token.immediate(/[^"\n\\`\$]+/),
             alias($.double_quoted_escape_sequence, $.escape_sequence),
             token.immediate(/\$\(/),
             '\\',
+            '`',
             $._immediate_expansion,
           ),
         ),
@@ -467,9 +481,10 @@ export default grammar({
         '\'',
         repeat(
           choice(
-            token.immediate(/[^'\n\\]+/),
+            token.immediate(/[^'\n\\`]+/),
             alias($.single_quoted_escape_sequence, $.escape_sequence),
             '\\',
+            '`',
           ),
         ),
         '\'',
@@ -478,9 +493,9 @@ export default grammar({
     unquoted_string: ($) =>
       repeat1(
         choice(
-          token.immediate(/[^\s\n\"'\\\$]+/),
-          token.immediate('\\ '),
-          token.immediate(/\\[^\s\n]/),
+          token.immediate(/[^\s\n\"'\\`\$]+/),
+          token.immediate(/[\\`] /),
+          token.immediate(/[\\`][^\s\n]/),
           $._immediate_expansion,
         ),
       ),
@@ -498,9 +513,9 @@ export default grammar({
 
     _spaced_env_value_fragment: ($) =>
       choice(
-        token.immediate(/[^\s\n\"'\\\$]+/),
-        token.immediate('\\ '),
-        token.immediate(/\\[^\s\n]/),
+        token.immediate(/[^\s\n\"'\\`\$]+/),
+        token.immediate(/[\\`] /),
+        token.immediate(/[\\`][^\s\n]/),
         $._immediate_expansion,
       ),
 
@@ -519,7 +534,5 @@ export default grammar({
     ),
 
     _non_newline_whitespace: () => token.immediate(/[\t ]+/),
-
-    comment: () => /#.*/,
   },
 });
