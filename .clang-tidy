@@ -9,6 +9,9 @@ Checks: >
   portability-*,
   readability-*,
   modernize-*,
+  misc-unused-parameters,
+  misc-redundant-expression,
+  misc-misleading-identifier,
 WarningsAsErrors: '*'
 HeaderFilterRegex: '^$'
 FormatStyle: file
