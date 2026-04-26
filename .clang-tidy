@@ -7,6 +7,8 @@ Checks: >
   cert-*,
   performance-*,
   portability-*,
+  readability-*,
+  modernize-*,
 WarningsAsErrors: '*'
 HeaderFilterRegex: '^$'
 FormatStyle: file
