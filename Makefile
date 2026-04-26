@@ -1,6 +1,6 @@
 LANGUAGE_NAME := tree-sitter-containerfile
 HOMEPAGE_URL := https://github.com/wharflab/tree-sitter-containerfile
-VERSION := 0.4.0
+VERSION := 0.5.0
 DESCRIPTION := A Containerfile and Dockerfile grammar for tree-sitter
 
 # repository
