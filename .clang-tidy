@@ -7,10 +7,6 @@ Checks: >
   cert-*,
   performance-*,
   portability-*,
-  -bugprone-easily-swappable-parameters,
-  -bugprone-macro-parentheses,
-  -bugprone-narrowing-conversions,
-  -bugprone-signed-char-misuse,
-  -cert-str34-c
 WarningsAsErrors: '*'
+HeaderFilterRegex: '^$'
 FormatStyle: file

@@ -31,6 +31,23 @@ enum TokenType {
     ERROR_SENTINEL,
 };
 
+typedef struct {
+    const char *key;
+    unsigned key_len;
+    int32_t value;
+    unsigned value_len;
+} parser_directive;
+
+static char serialize_bool(bool value) { return value ? '\1' : '\0'; }
+
+static bool deserialize_bool(char value) { return value != '\0'; }
+
+static char serialize_char(int32_t value) { return (char)(unsigned char)value; }
+
+static int32_t deserialize_char(char value) {
+    return (int32_t)(unsigned char)value;
+}
+
 void *tree_sitter_containerfile_external_scanner_create() {
     scanner_state *state = malloc(sizeof(scanner_state));
     if (!state)
@@ -69,12 +86,12 @@ unsigned tree_sitter_containerfile_external_scanner_serialize(void *payload,
     scanner_state *state = payload;
 
     unsigned pos = 0;
-    buffer[pos++] = state->in_heredoc;
-    buffer[pos++] = state->stripping_heredoc;
-    buffer[pos++] = state->directive_allowed;
-    buffer[pos++] = state->escape_seen;
-    buffer[pos++] = state->at_line_start;
-    buffer[pos++] = (char)state->escape_char;
+    buffer[pos++] = serialize_bool(state->in_heredoc);
+    buffer[pos++] = serialize_bool(state->stripping_heredoc);
+    buffer[pos++] = serialize_bool(state->directive_allowed);
+    buffer[pos++] = serialize_bool(state->escape_seen);
+    buffer[pos++] = serialize_bool(state->at_line_start);
+    buffer[pos++] = serialize_char(state->escape_char);
 
     for (unsigned i = 0; i < state->heredoc_count; i++) {
         // Add the ending null byte to the length since we'll have to copy it as
@@ -112,13 +129,13 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
         return;
     } else {
         unsigned pos = 0;
-        state->in_heredoc = buffer[pos++];
-        state->stripping_heredoc = buffer[pos++];
+        state->in_heredoc = deserialize_bool(buffer[pos++]);
+        state->stripping_heredoc = deserialize_bool(buffer[pos++]);
 
-        state->directive_allowed = buffer[pos++];
-        state->escape_seen = buffer[pos++];
-        state->at_line_start = buffer[pos++];
-        state->escape_char = buffer[pos++];
+        state->directive_allowed = deserialize_bool(buffer[pos++]);
+        state->escape_seen = deserialize_bool(buffer[pos++]);
+        state->at_line_start = deserialize_bool(buffer[pos++]);
+        state->escape_char = deserialize_char(buffer[pos++]);
         if (state->escape_char != '\\' && state->escape_char != '`') {
             state->escape_char = '\\';
         }
@@ -289,22 +306,24 @@ static bool scan_line_continuation(scanner_state *state, TSLexer *lexer,
     return true;
 }
 
-static bool is_parser_directive(scanner_state *state, const char *key,
-                                unsigned key_len, int32_t value,
-                                unsigned value_len) {
-    if (key_len == 6 && memcmp(key, "escape", 6) == 0) {
-        if (value_len != 1 || state->escape_seen ||
-            (value != '\\' && value != '`')) {
+static bool is_parser_directive(scanner_state *state,
+                                const parser_directive *directive) {
+    if (directive->key_len == 6 &&
+        memcmp(directive->key, "escape", 6) == 0) {
+        if (directive->value_len != 1 || state->escape_seen ||
+            (directive->value != '\\' && directive->value != '`')) {
             return false;
         }
-        state->escape_char = value;
+        state->escape_char = directive->value;
         state->escape_seen = true;
         return true;
     }
 
-    return value_len > 0 &&
-           ((key_len == 6 && memcmp(key, "syntax", 6) == 0) ||
-            (key_len == 5 && memcmp(key, "check", 5) == 0));
+    return directive->value_len > 0 &&
+           ((directive->key_len == 6 &&
+             memcmp(directive->key, "syntax", 6) == 0) ||
+            (directive->key_len == 5 &&
+             memcmp(directive->key, "check", 5) == 0));
 }
 
 static bool scan_comment(scanner_state *state, TSLexer *lexer) {
@@ -369,8 +388,13 @@ static bool scan_comment(scanner_state *state, TSLexer *lexer) {
     }
 
     if (may_be_directive && key_len < sizeof(key)) {
-        directive =
-            is_parser_directive(state, key, key_len, value, value_len);
+        const parser_directive candidate = {
+            .key = key,
+            .key_len = key_len,
+            .value = value,
+            .value_len = value_len,
+        };
+        directive = is_parser_directive(state, &candidate);
     }
 
     if (!directive && state->directive_allowed) {
@@ -431,7 +455,7 @@ static bool scan_marker(scanner_state *state, TSLexer *lexer) {
         }
 
         if (del_idx > 0) {
-            delimiter[del_idx++] = lexer->lookahead;
+            delimiter[del_idx++] = serialize_char(lexer->lookahead);
         }
         lexer->advance(lexer, false);
 
