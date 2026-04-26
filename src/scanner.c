@@ -5,8 +5,15 @@
 
 #include "tree_sitter/parser.h"
 
-#define MAX_HEREDOCS 10
-#define DEL_SPACE 512
+enum {
+    MAX_HEREDOCS = 10,
+    DEL_SPACE = 512,
+    SERIALIZED_HEADER_SIZE = 6,
+    DIRECTIVE_KEY_CAPACITY = 16,
+    CHECK_DIRECTIVE_LEN = 5,
+    ESCAPE_DIRECTIVE_LEN = 6,
+    SYNTAX_DIRECTIVE_LEN = 6,
+};
 
 typedef struct {
     bool in_heredoc;
@@ -31,10 +38,33 @@ enum TokenType {
     ERROR_SENTINEL,
 };
 
+typedef struct {
+    const char *key;
+    unsigned key_len;
+    int32_t value;
+    unsigned value_len;
+} parser_directive;
+
+static char serialize_bool(bool value) {
+    if (value) {
+        return (char)1;
+    }
+    return (char)0;
+}
+
+static bool deserialize_bool(char value) { return value != '\0'; }
+
+static char serialize_char(int32_t value) { return (char)(unsigned char)value; }
+
+static int32_t deserialize_char(char value) {
+    return (int32_t)(unsigned char)value;
+}
+
 void *tree_sitter_containerfile_external_scanner_create() {
     scanner_state *state = malloc(sizeof(scanner_state));
-    if (!state)
+    if (!state) {
         return NULL;
+    }
     memset(state, 0, sizeof(scanner_state));
     state->directive_allowed = true;
     state->at_line_start = true;
@@ -56,8 +86,9 @@ static void clear_heredocs(scanner_state *state) {
 }
 
 void tree_sitter_containerfile_external_scanner_destroy(void *payload) {
-    if (!payload)
+    if (!payload) {
         return;
+    }
 
     scanner_state *state = payload;
     clear_heredocs(state);
@@ -69,12 +100,12 @@ unsigned tree_sitter_containerfile_external_scanner_serialize(void *payload,
     scanner_state *state = payload;
 
     unsigned pos = 0;
-    buffer[pos++] = state->in_heredoc;
-    buffer[pos++] = state->stripping_heredoc;
-    buffer[pos++] = state->directive_allowed;
-    buffer[pos++] = state->escape_seen;
-    buffer[pos++] = state->at_line_start;
-    buffer[pos++] = (char)state->escape_char;
+    buffer[pos++] = serialize_bool(state->in_heredoc);
+    buffer[pos++] = serialize_bool(state->stripping_heredoc);
+    buffer[pos++] = serialize_bool(state->directive_allowed);
+    buffer[pos++] = serialize_bool(state->escape_seen);
+    buffer[pos++] = serialize_bool(state->at_line_start);
+    buffer[pos++] = serialize_char(state->escape_char);
 
     for (unsigned i = 0; i < state->heredoc_count; i++) {
         // Add the ending null byte to the length since we'll have to copy it as
@@ -108,72 +139,87 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
     state->at_line_start = true;
     state->escape_char = '\\';
 
-    if (length < 6) {
+    if (length < SERIALIZED_HEADER_SIZE) {
         return;
-    } else {
-        unsigned pos = 0;
-        state->in_heredoc = buffer[pos++];
-        state->stripping_heredoc = buffer[pos++];
-
-        state->directive_allowed = buffer[pos++];
-        state->escape_seen = buffer[pos++];
-        state->at_line_start = buffer[pos++];
-        state->escape_char = buffer[pos++];
-        if (state->escape_char != '\\' && state->escape_char != '`') {
-            state->escape_char = '\\';
-        }
-
-        unsigned heredoc_count = 0;
-        for (unsigned i = 0; i < MAX_HEREDOCS && pos < length; i++) {
-            const char *end = memchr(&buffer[pos], '\0', length - pos);
-            if (!end)
-                break;
-
-            unsigned len = end - &buffer[pos];
-
-            // We found the ending null byte which means that we're done.
-            if (len == 0)
-                break;
-
-            // Account for the ending null byte in strings (again).
-            len++;
-            char *heredoc = malloc(len);
-            if (!heredoc)
-                break;
-            memcpy(heredoc, &buffer[pos], len);
-            state->heredocs[i] = heredoc;
-            heredoc_count++;
-
-            pos += len;
-        }
-
-        state->heredoc_count = heredoc_count;
     }
+
+    unsigned pos = 0;
+    state->in_heredoc = deserialize_bool(buffer[pos++]);
+    state->stripping_heredoc = deserialize_bool(buffer[pos++]);
+
+    state->directive_allowed = deserialize_bool(buffer[pos++]);
+    state->escape_seen = deserialize_bool(buffer[pos++]);
+    state->at_line_start = deserialize_bool(buffer[pos++]);
+    state->escape_char = deserialize_char(buffer[pos++]);
+    if (state->escape_char != '\\' && state->escape_char != '`') {
+        state->escape_char = '\\';
+    }
+
+    unsigned heredoc_count = 0;
+    for (unsigned i = 0; i < MAX_HEREDOCS && pos < length; i++) {
+        const char *end = memchr(&buffer[pos], '\0', length - pos);
+        if (!end) {
+            break;
+        }
+
+        unsigned len = end - &buffer[pos];
+
+        // We found the ending null byte which means that we're done.
+        if (len == 0) {
+            break;
+        }
+
+        // Account for the ending null byte in strings (again).
+        len++;
+        char *heredoc = malloc(len);
+        if (!heredoc) {
+            break;
+        }
+        memcpy(heredoc, &buffer[pos], len);
+        state->heredocs[i] = heredoc;
+        heredoc_count++;
+
+        pos += len;
+    }
+
+    state->heredoc_count = heredoc_count;
 }
 
-static bool is_inline_space(int32_t c) {
-    return c != '\0' && c != '\n' && c != '\r' && iswspace(c);
+static bool is_inline_space(int32_t codepoint) {
+    return (codepoint != '\0' && codepoint != '\n' && codepoint != '\r' &&
+            iswspace(codepoint) != 0) != 0;
 }
 
-static bool is_directive_space(int32_t c) { return c == ' ' || c == '\t'; }
+static bool is_directive_space(int32_t codepoint) {
+    return (codepoint == ' ' || codepoint == '\t') != 0;
+}
 
-static int32_t to_lower_ascii(int32_t c) {
-    return c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c;
+static bool is_ascii_alpha(int32_t codepoint) {
+    return ((codepoint >= 'a' && codepoint <= 'z') ||
+            (codepoint >= 'A' && codepoint <= 'Z')) != 0;
+}
+
+static int32_t to_lower_ascii(int32_t codepoint) {
+    return codepoint >= 'A' && codepoint <= 'Z'
+               ? codepoint - 'A' + 'a'
+               : codepoint;
 }
 
 static bool is_line_end(TSLexer *lexer) {
-    return lexer->lookahead == '\n' || lexer->lookahead == '\r' ||
-           lexer->eof(lexer);
+    return (lexer->lookahead == '\n' || lexer->lookahead == '\r' ||
+            lexer->eof(lexer)) != 0;
 }
 
 static void skip_inline_whitespace(TSLexer *lexer) {
-    while (is_inline_space(lexer->lookahead))
+    while (is_inline_space(lexer->lookahead)) {
         lexer->advance(lexer, true);
+    }
 }
 
 static void skip_leading_tabs(TSLexer *lexer) {
-    while (lexer->lookahead == '\t')
+    while (lexer->lookahead == '\t') {
         lexer->advance(lexer, true);
+    }
 }
 
 static void push_heredoc(scanner_state *state, char *delimiter) {
@@ -189,8 +235,9 @@ static void push_heredoc(scanner_state *state, char *delimiter) {
 }
 
 static void pop_heredoc(scanner_state *state) {
-    if (state->heredoc_count == 0)
+    if (state->heredoc_count == 0) {
         return;
+    }
 
     free(state->heredocs[0]);
 
@@ -215,8 +262,9 @@ static void close_directive_prologue(scanner_state *state) {
 static bool scan_newline(scanner_state *state, TSLexer *lexer, int symbol) {
     if (lexer->lookahead == '\r') {
         lexer->advance(lexer, false);
-        if (lexer->lookahead == '\n')
+        if (lexer->lookahead == '\n') {
             lexer->advance(lexer, false);
+        }
     } else if (lexer->lookahead == '\n') {
         lexer->advance(lexer, false);
     } else {
@@ -244,8 +292,9 @@ static bool scan_line_continuation(scanner_state *state, TSLexer *lexer,
 
     skip_inline_whitespace(lexer);
 
-    if (lexer->lookahead != state->escape_char)
+    if (lexer->lookahead != state->escape_char) {
         return false;
+    }
 
     lexer->advance(lexer, false);
 
@@ -257,22 +306,26 @@ static bool scan_line_continuation(scanner_state *state, TSLexer *lexer,
 
         if (lexer->lookahead == '\r') {
             lexer->advance(lexer, false);
-            if (lexer->lookahead == '\n')
+            if (lexer->lookahead == '\n') {
                 lexer->advance(lexer, false);
+            }
         } else {
             lexer->advance(lexer, false);
         }
         return true;
     }
 
-    if (!valid_symbols[LINE_CONTINUATION])
+    if (!valid_symbols[LINE_CONTINUATION]) {
         return false;
+    }
 
-    while (lexer->lookahead == ' ' || lexer->lookahead == '\t')
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
         lexer->advance(lexer, false);
+    }
 
-    if (lexer->lookahead != '\n' && lexer->lookahead != '\r')
+    if (lexer->lookahead != '\n' && lexer->lookahead != '\r') {
         return false;
+    }
 
     close_directive_prologue(state);
     state->at_line_start = true;
@@ -280,8 +333,9 @@ static bool scan_line_continuation(scanner_state *state, TSLexer *lexer,
 
     if (lexer->lookahead == '\r') {
         lexer->advance(lexer, false);
-        if (lexer->lookahead == '\n')
+        if (lexer->lookahead == '\n') {
             lexer->advance(lexer, false);
+        }
     } else {
         lexer->advance(lexer, false);
     }
@@ -289,67 +343,110 @@ static bool scan_line_continuation(scanner_state *state, TSLexer *lexer,
     return true;
 }
 
-static bool is_parser_directive(scanner_state *state, const char *key,
-                                unsigned key_len, int32_t value,
-                                unsigned value_len) {
-    if (key_len == 6 && memcmp(key, "escape", 6) == 0) {
-        if (value_len != 1 || state->escape_seen ||
-            (value != '\\' && value != '`')) {
+static bool is_parser_directive(scanner_state *state,
+                                const parser_directive *directive) {
+    if (directive->key_len == ESCAPE_DIRECTIVE_LEN &&
+        memcmp(directive->key, "escape", ESCAPE_DIRECTIVE_LEN) == 0) {
+        if (directive->value_len != 1 || state->escape_seen ||
+            (directive->value != '\\' && directive->value != '`')) {
             return false;
         }
-        state->escape_char = value;
+        state->escape_char = directive->value;
         state->escape_seen = true;
         return true;
     }
 
-    return value_len > 0 &&
-           ((key_len == 6 && memcmp(key, "syntax", 6) == 0) ||
-            (key_len == 5 && memcmp(key, "check", 5) == 0));
+    if (directive->value_len == 0) {
+        return false;
+    }
+    if (directive->key_len == SYNTAX_DIRECTIVE_LEN &&
+        memcmp(directive->key, "syntax", SYNTAX_DIRECTIVE_LEN) == 0) {
+        return true;
+    }
+
+    return (directive->key_len == CHECK_DIRECTIVE_LEN &&
+            memcmp(directive->key, "check", CHECK_DIRECTIVE_LEN) == 0) != 0;
 }
 
-static bool scan_comment(scanner_state *state, TSLexer *lexer) {
-    if (lexer->lookahead != '#')
-        return false;
-
-    bool may_be_directive = state->directive_allowed &&
-                            state->at_line_start &&
-                            lexer->get_column(lexer) == 0;
-    bool directive = false;
-    char key[16];
+static bool parse_directive_header(TSLexer *lexer, parser_directive *directive,
+                                   char *key, unsigned key_capacity) {
     unsigned key_len = 0;
     int32_t value = 0;
     unsigned value_len = 0;
 
-    lexer->advance(lexer, false);
+    while (is_directive_space(lexer->lookahead)) {
+        lexer->advance(lexer, false);
+    }
 
-    if (may_be_directive) {
-        while (is_directive_space(lexer->lookahead))
-            lexer->advance(lexer, false);
+    while (is_ascii_alpha(lexer->lookahead)) {
+        if (key_len < key_capacity) {
+            key[key_len++] = (char)to_lower_ascii(lexer->lookahead);
+        }
+        lexer->advance(lexer, false);
+    }
 
-        while ((lexer->lookahead >= 'a' && lexer->lookahead <= 'z') ||
-               (lexer->lookahead >= 'A' && lexer->lookahead <= 'Z')) {
-            if (key_len < sizeof(key)) {
-                key[key_len++] = (char)to_lower_ascii(lexer->lookahead);
-            }
+    while (is_directive_space(lexer->lookahead)) {
+        lexer->advance(lexer, false);
+    }
+
+    if (key_len < key_capacity && lexer->lookahead == '=') {
+        lexer->advance(lexer, false);
+        while (is_directive_space(lexer->lookahead)) {
             lexer->advance(lexer, false);
         }
 
-        while (is_directive_space(lexer->lookahead))
-            lexer->advance(lexer, false);
-
-        if (key_len < sizeof(key) && lexer->lookahead == '=') {
-            lexer->advance(lexer, false);
-            while (is_directive_space(lexer->lookahead))
-                lexer->advance(lexer, false);
-
-            while (!is_line_end(lexer) &&
-                   !is_directive_space(lexer->lookahead)) {
-                if (value_len == 0) {
-                    value = lexer->lookahead;
-                }
-                value_len++;
-                lexer->advance(lexer, false);
+        while (!is_line_end(lexer) &&
+               !is_directive_space(lexer->lookahead)) {
+            if (value_len == 0) {
+                value = lexer->lookahead;
             }
+            value_len++;
+            lexer->advance(lexer, false);
+        }
+    }
+
+    directive->key = key;
+    directive->key_len = key_len;
+    directive->value = value;
+    directive->value_len = value_len;
+
+    return key_len < key_capacity;
+}
+
+static bool consume_line_end(TSLexer *lexer) {
+    if (lexer->lookahead == '\r') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '\n') {
+            lexer->advance(lexer, false);
+        }
+        return true;
+    }
+
+    if (lexer->lookahead == '\n') {
+        lexer->advance(lexer, false);
+        return true;
+    }
+
+    return false;
+}
+
+static bool scan_comment(scanner_state *state, TSLexer *lexer) {
+    if (lexer->lookahead != '#') {
+        return false;
+    }
+
+    bool may_be_directive = (state->directive_allowed &&
+                             state->at_line_start &&
+                             lexer->get_column(lexer) == 0) != 0;
+    bool directive = false;
+    char key[DIRECTIVE_KEY_CAPACITY];
+
+    lexer->advance(lexer, false);
+
+    if (may_be_directive) {
+        parser_directive candidate;
+        if (parse_directive_header(lexer, &candidate, key, sizeof(key))) {
+            directive = is_parser_directive(state, &candidate);
         }
     }
 
@@ -357,27 +454,11 @@ static bool scan_comment(scanner_state *state, TSLexer *lexer) {
         lexer->advance(lexer, false);
     }
 
-    bool consumed_newline = false;
-    if (lexer->lookahead == '\r') {
-        lexer->advance(lexer, false);
-        if (lexer->lookahead == '\n')
-            lexer->advance(lexer, false);
-        consumed_newline = true;
-    } else if (lexer->lookahead == '\n') {
-        lexer->advance(lexer, false);
-        consumed_newline = true;
-    }
-
-    if (may_be_directive && key_len < sizeof(key)) {
-        directive =
-            is_parser_directive(state, key, key_len, value, value_len);
-    }
-
     if (!directive && state->directive_allowed) {
         close_directive_prologue(state);
     }
 
-    state->at_line_start = consumed_newline;
+    state->at_line_start = consume_line_end(lexer);
     lexer->result_symbol = COMMENT;
     return true;
 }
@@ -385,12 +466,14 @@ static bool scan_comment(scanner_state *state, TSLexer *lexer) {
 static bool scan_marker(scanner_state *state, TSLexer *lexer) {
     skip_inline_whitespace(lexer);
 
-    if (lexer->lookahead != '<')
+    if (lexer->lookahead != '<') {
         return false;
+    }
     lexer->advance(lexer, false);
 
-    if (lexer->lookahead != '<')
+    if (lexer->lookahead != '<') {
         return false;
+    }
     lexer->advance(lexer, false);
 
     close_directive_prologue(state);
@@ -431,7 +514,7 @@ static bool scan_marker(scanner_state *state, TSLexer *lexer) {
         }
 
         if (del_idx > 0) {
-            delimiter[del_idx++] = lexer->lookahead;
+            delimiter[del_idx++] = serialize_char(lexer->lookahead);
         }
         lexer->advance(lexer, false);
 
@@ -451,17 +534,22 @@ static bool scan_marker(scanner_state *state, TSLexer *lexer) {
         lexer->advance(lexer, false);
     }
 
-    if (del_idx <= 1)
+    if (del_idx <= 1) {
         return false;
+    }
 
-    delimiter[0] = stripping ? '-' : ' ';
+    delimiter[0] = ' ';
+    if (stripping) {
+        delimiter[0] = '-';
+    }
     delimiter[del_idx] = '\0';
 
     // We copy the delimiter string to the heap here since we can't store our
     // stack-allocated string in our state (which is stored on the heap).
     char *del_copy = malloc(del_idx + 1);
-    if (!del_copy)
+    if (!del_copy) {
         return false;
+    }
     memcpy(del_copy, delimiter, del_idx + 1);
 
     push_heredoc(state, del_copy);
@@ -501,8 +589,9 @@ static bool scan_content(scanner_state *state, TSLexer *lexer,
         }
     }
 
-    if (!valid_symbols[HEREDOC_LINE])
+    if (!valid_symbols[HEREDOC_LINE]) {
         return false;
+    }
 
     lexer->result_symbol = HEREDOC_LINE;
 
@@ -540,8 +629,9 @@ bool tree_sitter_containerfile_external_scanner_scan(void *payload, TSLexer *lex
 
     if (valid_symbols[REQUIRED_LINE_CONTINUATION] ||
         valid_symbols[LINE_CONTINUATION]) {
-        if (scan_line_continuation(state, lexer, valid_symbols))
+        if (scan_line_continuation(state, lexer, valid_symbols)) {
             return true;
+        }
     }
 
     if (valid_symbols[COMMENT] && scan_comment(state, lexer)) {
