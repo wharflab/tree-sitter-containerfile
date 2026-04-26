@@ -33,3 +33,30 @@ func TestHighlightsQueryCompiles(t *testing.T) {
 		t.Errorf("expected keyword capture, got: %v", names)
 	}
 }
+
+func TestInjectionsQueryCompiles(t *testing.T) {
+	if containerfile.InjectionsQuery == "" {
+		t.Fatal("InjectionsQuery is empty")
+	}
+	query, err := containerfile.GetInjectionsQuery()
+	if err != nil {
+		t.Fatalf("injections query failed to compile: %v", err)
+	}
+	defer query.Close()
+
+	names := query.CaptureNames()
+	if len(names) == 0 {
+		t.Fatal("injections query has no captures")
+	}
+
+	found := false
+	for _, name := range names {
+		if name == "injection.content" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected injection.content capture, got: %v", names)
+	}
+}
