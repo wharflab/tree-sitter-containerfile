@@ -14,6 +14,24 @@ RUN echo "test" `
       (line_continuation))))
 
 ==================
+Backtick ENV value after continuation
+==================
+# escape = `
+
+ENV GOPATH `
+\go
+
+---
+
+(source_file
+  (comment)
+  (env_instruction
+    (env_pair
+      name: (unquoted_string)
+      value: (unquoted_string
+        (line_continuation)))))
+
+==================
 Backslash path with backtick escape
 ==================
 # escape=`
