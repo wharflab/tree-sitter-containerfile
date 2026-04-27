@@ -1155,21 +1155,8 @@
               "type": "FIELD",
               "name": "value",
               "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "double_quoted_string"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "single_quoted_string"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "unquoted_string"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "_env_assignment_value"
               }
             },
             {
@@ -1178,6 +1165,47 @@
           ]
         }
       ]
+    },
+    "_env_assignment_value": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "double_quoted_string"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "single_quoted_string"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "unquoted_string"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_env_single_quoted_string_with_trailing_quote"
+        }
+      ]
+    },
+    "_env_single_quoted_string_with_trailing_quote": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "single_quoted_string"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_env_trailing_single_quotes"
+        }
+      ]
+    },
+    "_env_trailing_single_quotes": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "'+"
+      }
     },
     "_spaced_env_pair": {
       "type": "SEQ",

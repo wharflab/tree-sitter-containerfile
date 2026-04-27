@@ -284,14 +284,22 @@ export default grammar({
         field('name', $._env_key),
         token.immediate('='),
         optional(
-          field('value',
-            choice(
-              $.double_quoted_string,
-              $.single_quoted_string,
-              $.unquoted_string,
-            )),
+          field('value', $._env_assignment_value),
         ),
       ),
+
+    _env_assignment_value: ($) =>
+      choice(
+        $.double_quoted_string,
+        $.single_quoted_string,
+        $.unquoted_string,
+        $._env_single_quoted_string_with_trailing_quote,
+      ),
+
+    _env_single_quoted_string_with_trailing_quote: ($) =>
+      seq($.single_quoted_string, $._env_trailing_single_quotes),
+
+    _env_trailing_single_quotes: () => token.immediate(/'+/),
 
     _spaced_env_pair: ($) =>
       seq(
