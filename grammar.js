@@ -423,6 +423,8 @@ export default grammar({
         seq($.heredoc_marker, /[ \t]*/),
         /"([^"\\`\n]|[\\`].)*"/,
         /'([^'\\`\n]|[\\`].)*'/,
+        $._shell_double_quoted_fragment,
+        $._shell_single_quoted_fragment,
         /[,=-]/,
         /[^\\`\[\n#\s,=\-"']([^\\`\n<"']|[\\`][^ \t\n])*/,
         /[\\`][^\n,=-]/,
@@ -430,6 +432,34 @@ export default grammar({
         /<[^<]/,
       ),
     ),
+
+    _shell_double_quoted_fragment: ($) =>
+      seq(
+        '"',
+        repeat(
+          choice(
+            token.immediate(prec(1, /[^"\\`\n]+/)),
+            token.immediate(/[\\`][^\r\n]/),
+            alias($.required_line_continuation, $.line_continuation),
+            $.line_continuation,
+          ),
+        ),
+        token.immediate('"'),
+      ),
+
+    _shell_single_quoted_fragment: ($) =>
+      seq(
+        '\'',
+        repeat(
+          choice(
+            token.immediate(prec(1, /[^'\\`\n]+/)),
+            token.immediate(/[\\`][^\r\n]/),
+            alias($.required_line_continuation, $.line_continuation),
+            $.line_continuation,
+          ),
+        ),
+        token.immediate('\''),
+      ),
 
     json_string_array: ($) =>
       seq(

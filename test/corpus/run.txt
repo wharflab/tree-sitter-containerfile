@@ -132,6 +132,25 @@ RUN echo "say \"hi\""
     (shell_command)))
 
 ==================
+Run with continuation inside quoted shell fragments
+==================
+
+RUN sh -c 'echo root:testpass \
+    > /tmp/passwd'
+RUN sh -c "echo root:testpass \
+    > /tmp/passwd"
+
+---
+
+(source_file
+  (run_instruction
+    (shell_command
+      (line_continuation)))
+  (run_instruction
+    (shell_command
+      (line_continuation))))
+
+==================
 Run with heredoc
 ==================
 
