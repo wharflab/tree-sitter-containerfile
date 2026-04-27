@@ -28,6 +28,24 @@ RUN echo "test" \
       (line_continuation))))
 
 ==================
+Shell command multiline with blank continuation lines
+==================
+
+RUN foo \
+
+bar \
+
+baz
+
+---
+
+(source_file
+  (run_instruction
+    (shell_command
+      (line_continuation)
+      (line_continuation))))
+
+==================
 Shell command multiline space after continuation
 ==================
 

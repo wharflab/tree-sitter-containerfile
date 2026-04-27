@@ -409,6 +409,7 @@ export default grammar({
         repeat(
           seq(
             alias($.required_line_continuation, $.line_continuation),
+            repeat($._newline),
             $._shell_fragment,
           ),
         ),
