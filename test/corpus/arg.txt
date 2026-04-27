@@ -8,7 +8,8 @@ ARG test
 
 (source_file
 	(arg_instruction
-		name: (unquoted_string)))
+		(arg_pair
+			name: (unquoted_string))))
 
 ==================
 With default
@@ -20,8 +21,9 @@ ARG foo=bar
 
 (source_file
 	(arg_instruction
-		name: (unquoted_string)
-		default: (unquoted_string)))
+		(arg_pair
+			name: (unquoted_string)
+			default: (unquoted_string))))
 		
 
 ==================
@@ -34,8 +36,9 @@ ARG foo="bar"
 
 (source_file
 	(arg_instruction
-		name: (unquoted_string)
-		default: (double_quoted_string)))
+		(arg_pair
+			name: (unquoted_string)
+			default: (double_quoted_string))))
 
 ==================
 Multiple args
@@ -47,9 +50,11 @@ ARG foo bar=baz
 
 (source_file
 	(arg_instruction
-		name: (unquoted_string)
-		name: (unquoted_string)
-		default: (unquoted_string)))
+		(arg_pair
+			name: (unquoted_string))
+		(arg_pair
+			name: (unquoted_string)
+			default: (unquoted_string))))
 
 ==================
 Multiple args with quoted default
@@ -61,9 +66,11 @@ ARG abc="123 456" def
 
 (source_file
 	(arg_instruction
-		name: (unquoted_string)
-		default: (double_quoted_string)
-		name: (unquoted_string)))
+		(arg_pair
+			name: (unquoted_string)
+			default: (double_quoted_string))
+		(arg_pair
+			name: (unquoted_string))))
 
 ==================
 No space after keyword

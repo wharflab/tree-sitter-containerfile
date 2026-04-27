@@ -29,9 +29,24 @@
   {
     "type": "arg_instruction",
     "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "arg_pair",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "arg_pair",
+    "named": true,
     "fields": {
       "default": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
@@ -49,7 +64,7 @@
         ]
       },
       "name": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {

@@ -728,61 +728,70 @@
                 "name": "_non_newline_whitespace"
               },
               {
-                "type": "FIELD",
-                "name": "name",
-                "content": {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "[a-zA-Z0-9_]+"
-                  },
-                  "named": true,
-                  "value": "unquoted_string"
-                }
-              },
-              {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "IMMEDIATE_TOKEN",
-                        "content": {
-                          "type": "STRING",
-                          "value": "="
-                        }
-                      },
-                      {
-                        "type": "FIELD",
-                        "name": "default",
-                        "content": {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "SYMBOL",
-                              "name": "double_quoted_string"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "single_quoted_string"
-                            },
-                            {
-                              "type": "SYMBOL",
-                              "name": "unquoted_string"
-                            }
-                          ]
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "BLANK"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "arg_pair"
               }
             ]
           }
+        }
+      ]
+    },
+    "arg_pair": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "PATTERN",
+              "value": "[a-zA-Z0-9_]+"
+            },
+            "named": true,
+            "value": "unquoted_string"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "IMMEDIATE_TOKEN",
+                  "content": {
+                    "type": "STRING",
+                    "value": "="
+                  }
+                },
+                {
+                  "type": "FIELD",
+                  "name": "default",
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "double_quoted_string"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "single_quoted_string"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "unquoted_string"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },

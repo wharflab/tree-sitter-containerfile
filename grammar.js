@@ -180,18 +180,23 @@ export default grammar({
         repeat1(
           seq(
             $._non_newline_whitespace,
-            field('name', alias(/[a-zA-Z0-9_]+/, $.unquoted_string)),
-            optional(
-              seq(
-                token.immediate('='),
-                field('default',
-                  choice(
-                    $.double_quoted_string,
-                    $.single_quoted_string,
-                    $.unquoted_string,
-                  )),
-              ),
-            ),
+            $.arg_pair,
+          ),
+        ),
+      ),
+
+    arg_pair: ($) =>
+      seq(
+        field('name', alias(/[a-zA-Z0-9_]+/, $.unquoted_string)),
+        optional(
+          seq(
+            token.immediate('='),
+            field('default',
+              choice(
+                $.double_quoted_string,
+                $.single_quoted_string,
+                $.unquoted_string,
+              )),
           ),
         ),
       ),
