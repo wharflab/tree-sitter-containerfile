@@ -67,3 +67,23 @@ COPY --link src dst
     (param)
     (path)
     (path)))
+
+==================
+JSON array
+==================
+
+COPY [ "test file", "/tmp" ]
+COPY --chmod=0644 [ "test file", "/tmp/test file" ]
+
+---
+
+(source_file
+  (copy_instruction
+    (json_string_array
+      (json_string)
+      (json_string)))
+  (copy_instruction
+    (param)
+    (json_string_array
+      (json_string)
+      (json_string))))

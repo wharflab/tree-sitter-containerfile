@@ -12,6 +12,10 @@
           "named": true
         },
         {
+          "type": "json_string_array",
+          "named": true
+        },
+        {
           "type": "param",
           "named": true
         },
@@ -85,6 +89,10 @@
       "types": [
         {
           "type": "heredoc_block",
+          "named": true
+        },
+        {
+          "type": "json_string_array",
           "named": true
         },
         {
