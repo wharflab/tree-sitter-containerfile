@@ -1707,6 +1707,13 @@
                 "value": "line_continuation"
               },
               {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_newline"
+                }
+              },
+              {
                 "type": "SYMBOL",
                 "name": "_shell_fragment"
               }
