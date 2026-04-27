@@ -291,13 +291,12 @@ export default grammar({
     _env_assignment_value: ($) =>
       choice(
         $.double_quoted_string,
-        $.single_quoted_string,
-        $.unquoted_string,
         $._env_single_quoted_string_with_trailing_quote,
+        $.unquoted_string,
       ),
 
     _env_single_quoted_string_with_trailing_quote: ($) =>
-      seq($.single_quoted_string, $._env_trailing_single_quotes),
+      seq($.single_quoted_string, optional($._env_trailing_single_quotes)),
 
     _env_trailing_single_quotes: () => token.immediate(/'+/),
 

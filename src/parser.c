@@ -9431,7 +9431,7 @@ static const TSParseActionEntry ts_parse_actions[] = {
   [762] = {.entry = {.count = 2, .reusable = true}}, REDUCE(aux_sym__spaced_env_value_repeat2, 2, 0, 0), SHIFT_REPEAT(69),
   [765] = {.entry = {.count = 1, .reusable = true}}, REDUCE(aux_sym_add_instruction_repeat2, 2, 0, 0),
   [767] = {.entry = {.count = 2, .reusable = true}}, REDUCE(aux_sym_add_instruction_repeat1, 2, 0, 0), SHIFT_REPEAT(305),
-  [770] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym__env_assignment_value, 1, 0, 0),
+  [770] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym__env_single_quoted_string_with_trailing_quote, 1, 0, 0),
   [772] = {.entry = {.count = 1, .reusable = true}}, SHIFT(241),
   [774] = {.entry = {.count = 1, .reusable = true}}, SHIFT(3),
   [776] = {.entry = {.count = 1, .reusable = true}}, SHIFT(262),

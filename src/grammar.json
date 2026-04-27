@@ -1175,15 +1175,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "single_quoted_string"
+          "name": "_env_single_quoted_string_with_trailing_quote"
         },
         {
           "type": "SYMBOL",
           "name": "unquoted_string"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_env_single_quoted_string_with_trailing_quote"
         }
       ]
     },
@@ -1195,8 +1191,16 @@
           "name": "single_quoted_string"
         },
         {
-          "type": "SYMBOL",
-          "name": "_env_trailing_single_quotes"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_env_trailing_single_quotes"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
