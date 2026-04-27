@@ -303,13 +303,18 @@ export default grammar({
     _spaced_env_pair: ($) =>
       seq(
         field('name', $._env_key),
-        token.immediate(/\s+/),
-        field('value',
-          choice(
-            $.double_quoted_string,
-            $.single_quoted_string,
-            alias($._spaced_env_value, $.unquoted_string),
-          )),
+        choice(
+          seq(
+            token.immediate(/\s+/),
+            field('value',
+              choice(
+                $.double_quoted_string,
+                $.single_quoted_string,
+                alias($._spaced_env_value, $.unquoted_string),
+              )),
+          ),
+          field('value', alias($._continued_spaced_env_value, $.unquoted_string)),
+        ),
       ),
 
     _env_key: ($) =>
@@ -540,14 +545,24 @@ export default grammar({
 
     _spaced_env_value: ($) =>
       seq(
-        repeat1(choice($._spaced_env_value_fragment, $._non_newline_whitespace)),
-        repeat(
-          seq(
-            alias($.required_line_continuation, $.line_continuation),
-            repeat1(choice($._spaced_env_value_fragment, $._non_newline_whitespace)),
-          ),
-        ),
+        repeat1($._spaced_env_value_atom),
+        repeat($._spaced_env_value_continuation),
       ),
+
+    _continued_spaced_env_value: ($) =>
+      seq(
+        $._spaced_env_value_continuation,
+        repeat($._spaced_env_value_continuation),
+      ),
+
+    _spaced_env_value_continuation: ($) =>
+      seq(
+        alias($.required_line_continuation, $.line_continuation),
+        repeat1($._spaced_env_value_atom),
+      ),
+
+    _spaced_env_value_atom: ($) =>
+      choice($._spaced_env_value_fragment, $._non_newline_whitespace),
 
     _spaced_env_value_fragment: ($) =>
       choice(
