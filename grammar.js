@@ -177,17 +177,21 @@ export default grammar({
     arg_instruction: ($) =>
       seq(
         alias(/[aA][rR][gG]/, 'ARG'),
-        $._non_newline_whitespace,
-        field('name', alias(/[a-zA-Z0-9_]+/, $.unquoted_string)),
-        optional(
+        repeat1(
           seq(
-            token.immediate('='),
-            field('default',
-              choice(
-                $.double_quoted_string,
-                $.single_quoted_string,
-                $.unquoted_string,
-              )),
+            $._non_newline_whitespace,
+            field('name', alias(/[a-zA-Z0-9_]+/, $.unquoted_string)),
+            optional(
+              seq(
+                token.immediate('='),
+                field('default',
+                  choice(
+                    $.double_quoted_string,
+                    $.single_quoted_string,
+                    $.unquoted_string,
+                  )),
+              ),
+            ),
           ),
         ),
       ),
