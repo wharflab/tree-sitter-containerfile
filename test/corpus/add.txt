@@ -53,3 +53,22 @@ ADD --chown=a:b --chmod=644 src dst
     (param)
     (path)
     (path)))
+
+==================
+JSON array
+==================
+
+ADD [ "vimrc", "/tmp" ]
+ADD [ "test file", "/tmp/test file" ]
+
+---
+
+(source_file
+  (add_instruction
+    (json_string_array
+      (json_string)
+      (json_string)))
+  (add_instruction
+    (json_string_array
+      (json_string)
+      (json_string))))

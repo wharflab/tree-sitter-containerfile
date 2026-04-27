@@ -99,22 +99,32 @@ export default grammar({
       seq(
         alias(/[aA][dD][dD]/, 'ADD'),
         repeat($.param),
-        repeat1(
-          seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace),
+        choice(
+          $.json_string_array,
+          seq(
+            repeat1(
+              seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace),
+            ),
+            alias($.path_with_heredoc, $.path),
+            repeat($.heredoc_block),
+          ),
         ),
-        alias($.path_with_heredoc, $.path),
-        repeat($.heredoc_block),
       ),
 
     copy_instruction: ($) =>
       seq(
         alias(/[cC][oO][pP][yY]/, 'COPY'),
         repeat($.param),
-        repeat1(
-          seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace),
+        choice(
+          $.json_string_array,
+          seq(
+            repeat1(
+              seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace),
+            ),
+            alias($.path_with_heredoc, $.path),
+            repeat($.heredoc_block),
+          ),
         ),
-        alias($.path_with_heredoc, $.path),
-        repeat($.heredoc_block),
       ),
 
     entrypoint_instruction: ($) =>
