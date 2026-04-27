@@ -719,9 +719,26 @@
           "value": "ARG"
         },
         {
-          "type": "SYMBOL",
-          "name": "_non_newline_whitespace"
-        },
+          "type": "REPEAT1",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_non_newline_whitespace"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "arg_pair"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "arg_pair": {
+      "type": "SEQ",
+      "members": [
         {
           "type": "FIELD",
           "name": "name",

@@ -6,6 +6,7 @@ package tree_sitter_containerfile
 const (
 	NodeAddInstruction = "add_instruction"
 	NodeArgInstruction = "arg_instruction"
+	NodeArgPair = "arg_pair"
 	NodeCmdInstruction = "cmd_instruction"
 	NodeComment = "comment"
 	NodeCopyInstruction = "copy_instruction"

@@ -177,7 +177,16 @@ export default grammar({
     arg_instruction: ($) =>
       seq(
         alias(/[aA][rR][gG]/, 'ARG'),
-        $._non_newline_whitespace,
+        repeat1(
+          seq(
+            $._non_newline_whitespace,
+            $.arg_pair,
+          ),
+        ),
+      ),
+
+    arg_pair: ($) =>
+      seq(
         field('name', alias(/[a-zA-Z0-9_]+/, $.unquoted_string)),
         optional(
           seq(

@@ -60,7 +60,7 @@
 ((variable) @constant
   (#match? @constant "^[A-Z][A-Z_0-9]*$"))
 
-(arg_instruction
+(arg_pair
   name: (unquoted_string) @property)
 
 (env_pair
