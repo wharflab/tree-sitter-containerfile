@@ -107,6 +107,22 @@ LABEL maintainer James Turnbull "james@example.com"
 			value: (unquoted_string))))
 
 ==================
+Legacy value with expansion
+==================
+
+LABEL maintainer James $USER
+
+---
+
+(source_file
+	(label_instruction
+		(label_pair
+			key: (unquoted_string)
+			value: (unquoted_string
+				(expansion
+					(variable))))))
+
+==================
 Legacy multiline value
 ==================
 
