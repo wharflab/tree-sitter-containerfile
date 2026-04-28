@@ -222,7 +222,60 @@ export default grammar({
     healthcheck_instruction: ($) =>
       seq(
         alias(/[hH][eE][aA][lL][tT][hH][cC][hH][eE][cC][kK]/, 'HEALTHCHECK'),
-        choice('NONE', seq(repeat($.param), $.cmd_instruction)),
+        optional(
+          choice(
+            'NONE',
+            seq(
+              repeat($.param),
+              choice(
+                alias($._healthcheck_cmd_instruction, $.cmd_instruction),
+                alias($._healthcheck_raw_command, $.shell_command),
+              ),
+            ),
+          ),
+        ),
+      ),
+
+    _healthcheck_cmd_instruction: ($) =>
+      seq(
+        alias(/[cC][mM][dD]/, 'CMD'),
+        optional(choice($.json_string_array, $.shell_command)),
+      ),
+
+    _healthcheck_raw_command: ($) =>
+      seq(
+        $._healthcheck_raw_fragment,
+        repeat(
+          seq(
+            alias($.required_line_continuation, $.line_continuation),
+            repeat($._newline),
+            $._shell_fragment,
+          ),
+        ),
+      ),
+
+    _healthcheck_raw_fragment: ($) =>
+      seq(
+        $._healthcheck_raw_fragment_atom,
+        repeat($._shell_fragment_atom),
+      ),
+
+    _healthcheck_raw_fragment_atom: ($) =>
+      choice(
+        seq($.heredoc_marker, /[ \t]*/),
+        /"([^"\\`\n]|[\\`].)*"/,
+        /'([^'\\`\n]|[\\`].)*'/,
+        $._shell_double_quoted_fragment,
+        $._shell_single_quoted_fragment,
+        /[,=-]/,
+        /[^cC\\`\[\n#\s,=\-"']([^\\`\n<"']|[\\`][^ \t\n])*/,
+        /[cC]([^mM\\`\n<"']|[\\`][^ \t\n])([^\\`\n<"']|[\\`][^ \t\n])*/,
+        /[cC][mM]([^dD\\`\n<"']|[\\`][^ \t\n])([^\\`\n<"']|[\\`][^ \t\n])*/,
+        /[cC][mM][dD][^\s\\`\n<"']([^\\`\n<"']|[\\`][^ \t\n])*/,
+        /[cC][mM]?/,
+        /[\\`][^\n,=-]/,
+        /[\\`]/,
+        /<[^<]/,
       ),
 
     shell_instruction: ($) =>
@@ -440,6 +493,10 @@ export default grammar({
       ),
 
     _shell_fragment: ($) => repeat1(
+      $._shell_fragment_atom,
+    ),
+
+    _shell_fragment_atom: ($) =>
       choice(
         // A shell fragment is broken into the same tokens as other
         // constructs because the lexer prefers the longer tokens
@@ -463,7 +520,6 @@ export default grammar({
         /[\\`]/,
         /<[^<]/,
       ),
-    ),
 
     _shell_double_quoted_fragment: ($) =>
       seq(

@@ -893,26 +893,211 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "STRING",
-              "value": "NONE"
-            },
-            {
-              "type": "SEQ",
+              "type": "CHOICE",
               "members": [
                 {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "param"
-                  }
+                  "type": "STRING",
+                  "value": "NONE"
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "REPEAT",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "param"
+                      }
+                    },
+                    {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "_healthcheck_cmd_instruction"
+                          },
+                          "named": true,
+                          "value": "cmd_instruction"
+                        },
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "_healthcheck_raw_command"
+                          },
+                          "named": true,
+                          "value": "shell_command"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "_healthcheck_cmd_instruction": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "PATTERN",
+            "value": "[cC][mM][dD]"
+          },
+          "named": false,
+          "value": "CMD"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "json_string_array"
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "cmd_instruction"
+                  "name": "shell_command"
                 }
               ]
+            },
+            {
+              "type": "BLANK"
             }
           ]
+        }
+      ]
+    },
+    "_healthcheck_raw_command": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_healthcheck_raw_fragment"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "required_line_continuation"
+                },
+                "named": true,
+                "value": "line_continuation"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_newline"
+                }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_shell_fragment"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "_healthcheck_raw_fragment": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_healthcheck_raw_fragment_atom"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_shell_fragment_atom"
+          }
+        }
+      ]
+    },
+    "_healthcheck_raw_fragment_atom": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "heredoc_marker"
+            },
+            {
+              "type": "PATTERN",
+              "value": "[ \\t]*"
+            }
+          ]
+        },
+        {
+          "type": "PATTERN",
+          "value": "\"([^\"\\\\`\\n]|[\\\\`].)*\""
+        },
+        {
+          "type": "PATTERN",
+          "value": "'([^'\\\\`\\n]|[\\\\`].)*'"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_shell_double_quoted_fragment"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_shell_single_quoted_fragment"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[,=-]"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[^cC\\\\`\\[\\n#\\s,=\\-\"']([^\\\\`\\n<\"']|[\\\\`][^ \\t\\n])*"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[cC]([^mM\\\\`\\n<\"']|[\\\\`][^ \\t\\n])([^\\\\`\\n<\"']|[\\\\`][^ \\t\\n])*"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[cC][mM]([^dD\\\\`\\n<\"']|[\\\\`][^ \\t\\n])([^\\\\`\\n<\"']|[\\\\`][^ \\t\\n])*"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[cC][mM][dD][^\\s\\\\`\\n<\"']([^\\\\`\\n<\"']|[\\\\`][^ \\t\\n])*"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[cC][mM]?"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[\\\\`][^\\n,=-]"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[\\\\`]"
+        },
+        {
+          "type": "PATTERN",
+          "value": "<[^<]"
         }
       ]
     },
@@ -1793,59 +1978,63 @@
     "_shell_fragment": {
       "type": "REPEAT1",
       "content": {
-        "type": "CHOICE",
-        "members": [
-          {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "heredoc_marker"
-              },
-              {
-                "type": "PATTERN",
-                "value": "[ \\t]*"
-              }
-            ]
-          },
-          {
-            "type": "PATTERN",
-            "value": "\"([^\"\\\\`\\n]|[\\\\`].)*\""
-          },
-          {
-            "type": "PATTERN",
-            "value": "'([^'\\\\`\\n]|[\\\\`].)*'"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_shell_double_quoted_fragment"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_shell_single_quoted_fragment"
-          },
-          {
-            "type": "PATTERN",
-            "value": "[,=-]"
-          },
-          {
-            "type": "PATTERN",
-            "value": "[^\\\\`\\[\\n#\\s,=\\-\"']([^\\\\`\\n<\"']|[\\\\`][^ \\t\\n])*"
-          },
-          {
-            "type": "PATTERN",
-            "value": "[\\\\`][^\\n,=-]"
-          },
-          {
-            "type": "PATTERN",
-            "value": "[\\\\`]"
-          },
-          {
-            "type": "PATTERN",
-            "value": "<[^<]"
-          }
-        ]
+        "type": "SYMBOL",
+        "name": "_shell_fragment_atom"
       }
+    },
+    "_shell_fragment_atom": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "heredoc_marker"
+            },
+            {
+              "type": "PATTERN",
+              "value": "[ \\t]*"
+            }
+          ]
+        },
+        {
+          "type": "PATTERN",
+          "value": "\"([^\"\\\\`\\n]|[\\\\`].)*\""
+        },
+        {
+          "type": "PATTERN",
+          "value": "'([^'\\\\`\\n]|[\\\\`].)*'"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_shell_double_quoted_fragment"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_shell_single_quoted_fragment"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[,=-]"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[^\\\\`\\[\\n#\\s,=\\-\"']([^\\\\`\\n<\"']|[\\\\`][^ \\t\\n])*"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[\\\\`][^\\n,=-]"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[\\\\`]"
+        },
+        {
+          "type": "PATTERN",
+          "value": "<[^<]"
+        }
+      ]
     },
     "_shell_double_quoted_fragment": {
       "type": "SEQ",

@@ -10,6 +10,17 @@ HEALTHCHECK NONE
   (healthcheck_instruction))
 
 ==================
+Bare
+==================
+
+HEALTHCHECK
+
+---
+
+(source_file
+  (healthcheck_instruction))
+
+==================
 Custom command
 ==================
 
@@ -23,6 +34,30 @@ HEALTHCHECK CMD	echo "test"
       (shell_command))))
 
 ==================
+Custom command without arguments
+==================
+
+HEALTHCHECK CMD
+
+---
+
+(source_file
+  (healthcheck_instruction
+    (cmd_instruction)))
+
+==================
+Legacy command
+==================
+
+HEALTHCHECK CONNECT TCP 7000
+
+---
+
+(source_file
+  (healthcheck_instruction
+    (shell_command)))
+
+==================
 With options
 ==================
 
@@ -34,5 +69,23 @@ HEALTHCHECK --interval=10s --retries=10 CMD echo "test"
   (healthcheck_instruction
     (param)
     (param)
+    (cmd_instruction
+      (shell_command))))
+
+==================
+With multiline options
+==================
+
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 \
+  CMD /app/check.sh --quiet
+
+---
+
+(source_file
+  (healthcheck_instruction
+    (param)
+    (param)
+    (param)
+    (line_continuation)
     (cmd_instruction
       (shell_command))))
