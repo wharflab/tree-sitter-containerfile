@@ -65,6 +65,80 @@ LABEL key="value${FOO}"
 					(variable))))))
 
 ==================
+Legacy key value
+==================
+
+LABEL maintainer Erik Hollensbe <erik@hollensbe.org>
+
+---
+
+(source_file
+	(label_instruction
+		(label_pair
+			key: (unquoted_string)
+			value: (unquoted_string))))
+
+==================
+Legacy tab-separated key value
+==================
+
+LABEL	maintainer	Seongyeol Lim <seongyeol37@gmail.com>
+
+---
+
+(source_file
+	(label_instruction
+		(label_pair
+			key: (unquoted_string)
+			value: (unquoted_string))))
+
+==================
+Legacy value with quotes
+==================
+
+LABEL maintainer James Turnbull "james@example.com"
+
+---
+
+(source_file
+	(label_instruction
+		(label_pair
+			key: (unquoted_string)
+			value: (unquoted_string))))
+
+==================
+Legacy value with expansion
+==================
+
+LABEL maintainer James $USER
+
+---
+
+(source_file
+	(label_instruction
+		(label_pair
+			key: (unquoted_string)
+			value: (unquoted_string
+				(expansion
+					(variable))))))
+
+==================
+Legacy multiline value
+==================
+
+LABEL maintainer Erik \
+  Hollensbe <erik@hollensbe.org>
+
+---
+
+(source_file
+	(label_instruction
+		(label_pair
+			key: (unquoted_string)
+			value: (unquoted_string
+				(line_continuation)))))
+
+==================
 Stopsignal
 ==================
 

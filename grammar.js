@@ -1,6 +1,32 @@
 /// <reference types="tree-sitter-cli/dsl"/>
 // @ts-check
 
+/**
+ * @param {RuleOrLiteral} atom
+ * @param {RuleOrLiteral} continuation
+ * @returns {RuleOrLiteral}
+ */
+const spacedValue = (atom, continuation) =>
+  seq(repeat1(atom), repeat(continuation));
+
+/**
+ * @param {RuleOrLiteral} continuation
+ * @returns {RuleOrLiteral}
+ */
+const continuedSpacedValue = (continuation) =>
+  seq(continuation, repeat(continuation));
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {RuleOrLiteral} atom
+ * @returns {RuleOrLiteral}
+ */
+const spacedValueContinuation = ($, atom) =>
+  seq(
+    alias($.required_line_continuation, $.line_continuation),
+    repeat1(atom),
+  );
+
 export default grammar({
   name: 'containerfile',
 
@@ -81,7 +107,10 @@ export default grammar({
       ),
 
     label_instruction: ($) =>
-      seq(alias(/[lL][aA][bB][eE][lL]/, 'LABEL'), repeat1($.label_pair)),
+      seq(
+        alias(/[lL][aA][bB][eE][lL]/, 'LABEL'),
+        choice(repeat1($.label_pair), alias($._spaced_label_pair, $.label_pair)),
+      ),
 
     expose_instruction: ($) =>
       seq(
@@ -396,11 +425,7 @@ export default grammar({
 
     label_pair: ($) =>
       seq(
-        field('key', choice(
-          alias(/[-a-zA-Z0-9\._]+/, $.unquoted_string),
-          $.double_quoted_string,
-          $.single_quoted_string,
-        )),
+        field('key', $._label_key),
         token.immediate('='),
         field('value',
           choice(
@@ -408,6 +433,27 @@ export default grammar({
             $.single_quoted_string,
             $.unquoted_string,
           )),
+      ),
+
+    _spaced_label_pair: ($) =>
+      seq(
+        field('key', $._label_key),
+        // Legacy LABEL treats the first word as the key and the rest of the
+        // line as the value, so quotes remain literal value text.
+        choice(
+          seq(
+            token.immediate(/\s+/),
+            field('value', alias($._spaced_label_value, $.unquoted_string)),
+          ),
+          field('value', alias($._continued_spaced_label_value, $.unquoted_string)),
+        ),
+      ),
+
+    _label_key: ($) =>
+      choice(
+        alias(/[-a-zA-Z0-9\._]+/, $.unquoted_string),
+        $.double_quoted_string,
+        $.single_quoted_string,
       ),
 
     image_spec: ($) =>
@@ -618,22 +664,49 @@ export default grammar({
         ),
       ),
 
+    _spaced_label_value: ($) =>
+      spacedValue(
+        $._spaced_label_value_atom,
+        $._spaced_label_value_continuation,
+      ),
+
+    _continued_spaced_label_value: ($) =>
+      continuedSpacedValue(
+        $._spaced_label_value_continuation,
+      ),
+
+    _spaced_label_value_continuation: ($) =>
+      spacedValueContinuation(
+        $,
+        $._spaced_label_value_atom,
+      ),
+
+    _spaced_label_value_atom: ($) =>
+      choice($._spaced_label_value_fragment, $._non_newline_whitespace),
+
+    _spaced_label_value_fragment: ($) =>
+      choice(
+        token.immediate(/[^\s\n\\`\$]+/),
+        token.immediate(/[\\`] /),
+        token.immediate(/[\\`][^\s\n]/),
+        $._immediate_expansion,
+      ),
+
     _spaced_env_value: ($) =>
-      seq(
-        repeat1($._spaced_env_value_atom),
-        repeat($._spaced_env_value_continuation),
+      spacedValue(
+        $._spaced_env_value_atom,
+        $._spaced_env_value_continuation,
       ),
 
     _continued_spaced_env_value: ($) =>
-      seq(
+      continuedSpacedValue(
         $._spaced_env_value_continuation,
-        repeat($._spaced_env_value_continuation),
       ),
 
     _spaced_env_value_continuation: ($) =>
-      seq(
-        alias($.required_line_continuation, $.line_continuation),
-        repeat1($._spaced_env_value_atom),
+      spacedValueContinuation(
+        $,
+        $._spaced_env_value_atom,
       ),
 
     _spaced_env_value_atom: ($) =>
