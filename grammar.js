@@ -1,6 +1,32 @@
 /// <reference types="tree-sitter-cli/dsl"/>
 // @ts-check
 
+/**
+ * @param {RuleOrLiteral} atom
+ * @param {RuleOrLiteral} continuation
+ * @returns {RuleOrLiteral}
+ */
+const spacedValue = (atom, continuation) =>
+  seq(repeat1(atom), repeat(continuation));
+
+/**
+ * @param {RuleOrLiteral} continuation
+ * @returns {RuleOrLiteral}
+ */
+const continuedSpacedValue = (continuation) =>
+  seq(continuation, repeat(continuation));
+
+/**
+ * @param {GrammarSymbols<string>} $
+ * @param {RuleOrLiteral} atom
+ * @returns {RuleOrLiteral}
+ */
+const spacedValueContinuation = ($, atom) =>
+  seq(
+    alias($.required_line_continuation, $.line_continuation),
+    repeat1(atom),
+  );
+
 export default grammar({
   name: 'containerfile',
 
@@ -412,6 +438,8 @@ export default grammar({
     _spaced_label_pair: ($) =>
       seq(
         field('key', $._label_key),
+        // Legacy LABEL treats the first word as the key and the rest of the
+        // line as the value, so quotes remain literal value text.
         choice(
           seq(
             token.immediate(/\s+/),
@@ -637,21 +665,20 @@ export default grammar({
       ),
 
     _spaced_label_value: ($) =>
-      seq(
-        repeat1($._spaced_label_value_atom),
-        repeat($._spaced_label_value_continuation),
+      spacedValue(
+        $._spaced_label_value_atom,
+        $._spaced_label_value_continuation,
       ),
 
     _continued_spaced_label_value: ($) =>
-      seq(
+      continuedSpacedValue(
         $._spaced_label_value_continuation,
-        repeat($._spaced_label_value_continuation),
       ),
 
     _spaced_label_value_continuation: ($) =>
-      seq(
-        alias($.required_line_continuation, $.line_continuation),
-        repeat1($._spaced_label_value_atom),
+      spacedValueContinuation(
+        $,
+        $._spaced_label_value_atom,
       ),
 
     _spaced_label_value_atom: ($) =>
@@ -666,21 +693,20 @@ export default grammar({
       ),
 
     _spaced_env_value: ($) =>
-      seq(
-        repeat1($._spaced_env_value_atom),
-        repeat($._spaced_env_value_continuation),
+      spacedValue(
+        $._spaced_env_value_atom,
+        $._spaced_env_value_continuation,
       ),
 
     _continued_spaced_env_value: ($) =>
-      seq(
+      continuedSpacedValue(
         $._spaced_env_value_continuation,
-        repeat($._spaced_env_value_continuation),
       ),
 
     _spaced_env_value_continuation: ($) =>
-      seq(
-        alias($.required_line_continuation, $.line_continuation),
-        repeat1($._spaced_env_value_atom),
+      spacedValueContinuation(
+        $,
+        $._spaced_env_value_atom,
       ),
 
     _spaced_env_value_atom: ($) =>
