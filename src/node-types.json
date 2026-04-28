@@ -81,7 +81,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "json_string_array",
@@ -296,6 +296,10 @@
         },
         {
           "type": "param",
+          "named": true
+        },
+        {
+          "type": "shell_command",
           "named": true
         }
       ]
