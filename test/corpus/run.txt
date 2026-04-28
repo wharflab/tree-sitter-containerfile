@@ -86,6 +86,34 @@ run ["echo", "test"]
       (json_string))))
 
 ==================
+Run with multiline JSON array
+==================
+
+RUN ["echo", \
+  "ok"]
+
+---
+
+(source_file
+  (run_instruction
+    (json_string_array
+      (json_string)
+      (line_continuation)
+      (json_string))))
+
+==================
+Run falls back for unterminated JSON string
+==================
+
+RUN ["echo", "look ma, no quote!]
+
+---
+
+(source_file
+  (run_instruction
+    (shell_command)))
+
+==================
 Run with options
 ==================
 

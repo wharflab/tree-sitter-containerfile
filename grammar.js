@@ -36,6 +36,7 @@ export default grammar({
     $.line_continuation,
     $.required_line_continuation,
     $._newline,
+    $._invalid_json_array_shell_command,
     $.heredoc_marker,
     $._heredoc_line,
     $.heredoc_end,
@@ -96,14 +97,14 @@ export default grammar({
             $.mount_param,
           ),
         ),
-        choice($.json_string_array, $.shell_command),
+        $._json_or_shell_command,
         repeat($.heredoc_block),
       ),
 
     cmd_instruction: ($) =>
       seq(
         alias(/[cC][mM][dD]/, 'CMD'),
-        choice($.json_string_array, $.shell_command),
+        $._json_or_shell_command,
       ),
 
     label_instruction: ($) =>
@@ -159,7 +160,7 @@ export default grammar({
     entrypoint_instruction: ($) =>
       seq(
         alias(/[eE][nN][tT][rR][yY][pP][oO][iI][nN][tT]/, 'ENTRYPOINT'),
-        choice($.json_string_array, $.shell_command),
+        $._json_or_shell_command,
       ),
 
     volume_instruction: ($) =>
@@ -525,6 +526,13 @@ export default grammar({
       choice(/[-a-zA-Z0-9_]+/, $.expansion),
       repeat(choice(token.immediate(/[-a-zA-Z0-9_]+/), $._immediate_expansion)),
     ),
+
+    _json_or_shell_command: ($) =>
+      choice(
+        alias($._invalid_json_array_shell_command, $.shell_command),
+        prec(1, $.json_string_array),
+        $.shell_command,
+      ),
 
     shell_command: ($) =>
       seq(

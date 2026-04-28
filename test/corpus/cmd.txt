@@ -52,3 +52,31 @@ cmd ["echo", "test"]
     (json_string_array
       (json_string)
       (json_string))))
+
+==================
+Cmd with multiline JSON array
+==================
+
+CMD ["echo", \
+  "ok"]
+
+---
+
+(source_file
+  (cmd_instruction
+    (json_string_array
+      (json_string)
+      (line_continuation)
+      (json_string))))
+
+==================
+Cmd falls back for invalid JSON exec array
+==================
+
+CMD ['echo','single quotes are invalid JSON']
+
+---
+
+(source_file
+  (cmd_instruction
+    (shell_command)))
