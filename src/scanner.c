@@ -31,6 +31,7 @@ enum TokenType {
     LINE_CONTINUATION,
     REQUIRED_LINE_CONTINUATION,
     NEWLINE,
+    INVALID_JSON_ARRAY_SHELL_COMMAND,
     HEREDOC_MARKER,
     HEREDOC_LINE,
     HEREDOC_END,
@@ -343,6 +344,163 @@ static bool scan_line_continuation(scanner_state *state, TSLexer *lexer,
     return true;
 }
 
+static bool consume_json_array_line_continuation(scanner_state *state,
+                                                TSLexer *lexer) {
+    if (lexer->lookahead != state->escape_char) {
+        return false;
+    }
+
+    lexer->advance(lexer, false);
+
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+        lexer->advance(lexer, false);
+    }
+
+    if (lexer->lookahead == '\r') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == '\n') {
+            lexer->advance(lexer, false);
+        }
+        return true;
+    }
+
+    if (lexer->lookahead == '\n') {
+        lexer->advance(lexer, false);
+        return true;
+    }
+
+    return false;
+}
+
+static void skip_json_array_whitespace(scanner_state *state, TSLexer *lexer) {
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+        lexer->advance(lexer, false);
+    }
+
+    while (lexer->lookahead == state->escape_char &&
+           consume_json_array_line_continuation(state, lexer)) {
+        while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+            lexer->advance(lexer, false);
+        }
+    }
+}
+
+static void consume_to_line_end(TSLexer *lexer) {
+    while (!is_line_end(lexer)) {
+        lexer->advance(lexer, false);
+    }
+}
+
+static bool scan_json_escape_sequence(TSLexer *lexer) {
+    switch (lexer->lookahead) {
+    case '"':
+    case '\\':
+    case '/':
+    case 'b':
+    case 'f':
+    case 'n':
+    case 'r':
+    case 't':
+        lexer->advance(lexer, false);
+        return true;
+
+    case 'u':
+        lexer->advance(lexer, false);
+        for (unsigned i = 0; i < 4; i++) {
+            if (!iswxdigit(lexer->lookahead)) {
+                return false;
+            }
+            lexer->advance(lexer, false);
+        }
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+static bool scan_json_string(TSLexer *lexer) {
+    if (lexer->lookahead != '"') {
+        return false;
+    }
+
+    lexer->advance(lexer, false);
+
+    for (;;) {
+        if (is_line_end(lexer)) {
+            return false;
+        }
+
+        switch (lexer->lookahead) {
+        case '"':
+            lexer->advance(lexer, false);
+            return true;
+
+        case '\\':
+            lexer->advance(lexer, false);
+            if (!scan_json_escape_sequence(lexer)) {
+                return false;
+            }
+            break;
+
+        default:
+            lexer->advance(lexer, false);
+            break;
+        }
+    }
+}
+
+static bool scan_invalid_json_array_shell_command(scanner_state *state,
+                                                 TSLexer *lexer) {
+    if (lexer->lookahead != '[') {
+        return false;
+    }
+
+    lexer->advance(lexer, false);
+    skip_json_array_whitespace(state, lexer);
+
+    if (lexer->lookahead == ']') {
+        lexer->advance(lexer, false);
+        skip_json_array_whitespace(state, lexer);
+        if (is_line_end(lexer)) {
+            return false;
+        }
+        lexer->result_symbol = INVALID_JSON_ARRAY_SHELL_COMMAND;
+        return true;
+    }
+
+    for (;;) {
+        if (!scan_json_string(lexer)) {
+            consume_to_line_end(lexer);
+            lexer->result_symbol = INVALID_JSON_ARRAY_SHELL_COMMAND;
+            return true;
+        }
+
+        skip_json_array_whitespace(state, lexer);
+
+        if (lexer->lookahead == ',') {
+            lexer->advance(lexer, false);
+            skip_json_array_whitespace(state, lexer);
+            continue;
+        }
+
+        if (lexer->lookahead == ']') {
+            lexer->advance(lexer, false);
+            skip_json_array_whitespace(state, lexer);
+            if (is_line_end(lexer)) {
+                return false;
+            }
+            consume_to_line_end(lexer);
+            lexer->result_symbol = INVALID_JSON_ARRAY_SHELL_COMMAND;
+            return true;
+        }
+
+        consume_to_line_end(lexer);
+        lexer->result_symbol = INVALID_JSON_ARRAY_SHELL_COMMAND;
+        return true;
+    }
+}
+
 static bool is_parser_directive(scanner_state *state,
                                 const parser_directive *directive) {
     if (directive->key_len == ESCAPE_DIRECTIVE_LEN &&
@@ -632,6 +790,11 @@ bool tree_sitter_containerfile_external_scanner_scan(void *payload, TSLexer *lex
         if (scan_line_continuation(state, lexer, valid_symbols)) {
             return true;
         }
+    }
+
+    if (valid_symbols[INVALID_JSON_ARRAY_SHELL_COMMAND] &&
+        scan_invalid_json_array_shell_command(state, lexer)) {
+        return true;
     }
 
     if (valid_symbols[COMMENT] && scan_comment(state, lexer)) {

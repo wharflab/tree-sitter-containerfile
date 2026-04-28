@@ -52,3 +52,31 @@ ENTRYPOINT ["echo", "test"]
     (json_string_array
       (json_string)
       (json_string))))
+
+==================
+Entrypoint exec form multiline array
+==================
+
+ENTRYPOINT ["echo", \
+  "ok"]
+
+---
+
+(source_file
+  (entrypoint_instruction
+    (json_string_array
+      (json_string)
+      (line_continuation)
+      (json_string))))
+
+==================
+Entrypoint falls back for unterminated JSON exec array
+==================
+
+ENTRYPOINT ["echo", "Please, close the brackets when you're done"
+
+---
+
+(source_file
+  (entrypoint_instruction
+    (shell_command)))

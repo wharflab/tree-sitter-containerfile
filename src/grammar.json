@@ -227,17 +227,8 @@
           }
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "json_string_array"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "shell_command"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "_json_or_shell_command"
         },
         {
           "type": "REPEAT",
@@ -261,17 +252,8 @@
           "value": "CMD"
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "json_string_array"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "shell_command"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "_json_or_shell_command"
         }
       ]
     },
@@ -532,17 +514,8 @@
           "value": "ENTRYPOINT"
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "json_string_array"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "shell_command"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "_json_or_shell_command"
         }
       ]
     },
@@ -2012,6 +1985,32 @@
         }
       ]
     },
+    "_json_or_shell_command": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_invalid_json_array_shell_command"
+          },
+          "named": true,
+          "value": "shell_command"
+        },
+        {
+          "type": "PREC",
+          "value": 1,
+          "content": {
+            "type": "SYMBOL",
+            "name": "json_string_array"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "shell_command"
+        }
+      ]
+    },
     "shell_command": {
       "type": "SEQ",
       "members": [
@@ -2703,6 +2702,10 @@
     {
       "type": "SYMBOL",
       "name": "_newline"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_invalid_json_array_shell_command"
     },
     {
       "type": "SYMBOL",
