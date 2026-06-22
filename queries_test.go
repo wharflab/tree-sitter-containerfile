@@ -1,6 +1,7 @@
 package tree_sitter_containerfile_test
 
 import (
+	"strings"
 	"testing"
 
 	sitter "github.com/tree-sitter/go-tree-sitter"
@@ -166,5 +167,95 @@ EOF
 
 	for filename, language := range expected {
 		t.Errorf("missing %s injection for %q", language, filename)
+	}
+}
+
+// TestShellCommandInjectionsAreNotCombined guards against a regression of
+// issue #27. The bash injection for shell_command must NOT use
+// (#set! injection.combined): combining merges every RUN body in the file into
+// a single bash document, so the trailing token of one RUN fuses with the
+// leading command word of the next (e.g. "migrations.sh" + "bundle"), and every
+// command from the second RUN onward loses its highlighting. Each shell_command
+// must instead inject as its own document.
+func TestShellCommandInjectionsAreNotCombined(t *testing.T) {
+	// Mirrors the reproduction from issue #27: two RUN instructions separated
+	// by a COPY. The first RUN ends in "migrations.sh"; the second starts with
+	// "bundle". With injection.combined they would parse as one bash document.
+	source := []byte(`ARG IMAGE_TAG
+FROM $IMAGE_TAG
+
+RUN chmod +x \
+    /entrypoints/kafka-consumer.sh \
+    /entrypoints/migrations.sh
+
+COPY . /app
+
+RUN bundle install --jobs $(nproc)
+`)
+
+	language := containerfile.GetLanguage()
+	parser := sitter.NewParser()
+	defer parser.Close()
+	if err := parser.SetLanguage(language); err != nil {
+		t.Fatalf("set language: %v", err)
+	}
+
+	tree := parser.Parse(source, nil)
+	defer tree.Close()
+	if tree.RootNode().HasError() {
+		t.Fatalf("source parsed with errors:\n%s", tree.RootNode().ToSexp())
+	}
+
+	query, err := containerfile.GetInjectionsQuery()
+	if err != nil {
+		t.Fatalf("injections query failed to compile: %v", err)
+	}
+	defer query.Close()
+
+	cursor := sitter.NewQueryCursor()
+	defer cursor.Close()
+
+	captureNames := query.CaptureNames()
+	var bashRegions []string
+	matches := cursor.Matches(query, tree.RootNode(), source)
+	for match := matches.Next(); match != nil; match = matches.Next() {
+		var language string
+		combined := false
+		for _, property := range query.PropertySettings(match.PatternIndex) {
+			switch property.Key {
+			case "injection.language":
+				if property.Value != nil {
+					language = *property.Value
+				}
+			case "injection.combined":
+				combined = true
+			}
+		}
+		if language != "bash" {
+			continue
+		}
+		if combined {
+			t.Errorf("bash injection must not set injection.combined (issue #27); "+
+				"combining fuses adjacent RUN bodies into one document")
+		}
+		for _, capture := range match.Captures {
+			if captureNames[capture.Index] == "injection.content" {
+				bashRegions = append(bashRegions, capture.Node.Utf8Text(source))
+			}
+		}
+	}
+
+	// Each RUN body (shell_command) must be its own injected region. The
+	// heredoc-based bash injection does not fire here, so exactly the two
+	// shell_command bodies are expected.
+	if len(bashRegions) != 2 {
+		t.Fatalf("expected 2 separate bash injection regions, got %d: %#v", len(bashRegions), bashRegions)
+	}
+
+	// Sanity-check that the two RUN bodies remained distinct documents: the
+	// second region must begin with the "bundle" command word rather than being
+	// glued onto the first region's trailing "migrations.sh".
+	if !strings.HasPrefix(strings.TrimSpace(bashRegions[1]), "bundle") {
+		t.Errorf("second bash region should start with the \"bundle\" command, got %q", bashRegions[1])
 	}
 }
