@@ -1,9 +1,13 @@
 ((comment) @injection.content
   (#set! injection.language "comment"))
 
+; Each shell_command is its own bash document. Do NOT add
+; (#set! injection.combined): it would parse every RUN body in the file as a
+; single bash document, so the trailing token of one RUN fuses with the leading
+; command word of the next (e.g. "migrations.sh" + "bundle"), breaking command
+; highlighting from the second RUN onward. See issue #27.
 ((shell_command) @injection.content
-  (#set! injection.language "bash")
-  (#set! injection.combined))
+  (#set! injection.language "bash"))
 
 ((run_instruction
   (heredoc_block) @injection.content)

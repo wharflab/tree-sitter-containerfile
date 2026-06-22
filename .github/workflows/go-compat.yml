@@ -29,5 +29,8 @@ jobs:
         with:
           go-version: stable
 
+      - name: Run Go unit tests (grammar bindings and queries)
+        run: CGO_ENABLED=1 go test ./...
+
       - name: Run Go compatibility acceptance test
         run: bash go-compat/acceptance.sh

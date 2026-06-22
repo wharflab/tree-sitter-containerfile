@@ -212,3 +212,28 @@ EOF
       (heredoc_marker))
     (heredoc_block
       (heredoc_end))))
+
+==================
+Multiple runs stay separate shell commands (issue #27)
+==================
+
+RUN chmod +x \
+    /entrypoints/kafka-consumer.sh \
+    /entrypoints/migrations.sh
+
+COPY . /app
+
+RUN bundle install --jobs $(nproc)
+
+---
+
+(source_file
+  (run_instruction
+    (shell_command
+      (line_continuation)
+      (line_continuation)))
+  (copy_instruction
+    (path)
+    (path))
+  (run_instruction
+    (shell_command)))
