@@ -175,10 +175,10 @@ FROM a AS b c
   (ERROR))
 
 ======================================================
-No spaces in image alias expansion
+Image alias with expansion
 ======================================================
 
-FROM a AS b $C
+FROM a AS b$C
 
 ---
 
@@ -187,7 +187,6 @@ FROM a AS b $C
     (image_spec
       name: (image_name))
     as: (image_alias
-      (ERROR)
       (expansion
         (variable)))))
 

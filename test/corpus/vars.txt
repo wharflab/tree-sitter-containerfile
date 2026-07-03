@@ -47,7 +47,9 @@ COPY $FOO ./${bar:-abc}
         (variable)))
     (path
       (expansion
-        (variable)))))
+        (variable)
+        (expansion_modifier
+          (expansion_operator))))))
 
 ================================================================================
 Env
@@ -269,3 +271,41 @@ ONBUILD ADD /$FOO ./${bar}
       (path
         (expansion
           (variable))))))
+
+================================================================================
+Expansion with default modifier
+================================================================================
+
+ENV R=${foo:-def}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (env_instruction
+    (env_pair
+      name: (unquoted_string)
+      value: (unquoted_string
+        (expansion
+          (variable)
+          (expansion_modifier
+            (expansion_operator)))))))
+
+================================================================================
+Expansion with nested default
+================================================================================
+
+ENV R=${foo:-${bar}}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (env_instruction
+    (env_pair
+      name: (unquoted_string)
+      value: (unquoted_string
+        (expansion
+          (variable)
+          (expansion_modifier
+            (expansion_operator)
+            (expansion
+              (variable))))))))

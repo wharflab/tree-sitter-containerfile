@@ -231,11 +231,34 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
+          "type": "expansion_modifier",
+          "named": true
+        },
+        {
           "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "expansion_modifier",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "expansion",
+          "named": true
+        },
+        {
+          "type": "expansion_operator",
           "named": true
         }
       ]
@@ -917,6 +940,11 @@
     }
   },
   {
+    "type": "variable",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "volume_instruction",
     "named": true,
     "fields": {},
@@ -1096,6 +1124,10 @@
     "named": true
   },
   {
+    "type": "expansion_operator",
+    "named": true
+  },
+  {
     "type": "heredoc_end",
     "named": true
   },
@@ -1111,10 +1143,6 @@
   {
     "type": "mount",
     "named": false
-  },
-  {
-    "type": "variable",
-    "named": true
   },
   {
     "type": "{",

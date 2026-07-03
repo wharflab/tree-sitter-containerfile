@@ -435,8 +435,28 @@ export default grammar({
         $.variable,
         seq(
           token.immediate('{'),
-          alias(token.immediate(/[^\}]+/), $.variable),
+          alias(token.immediate(/[a-zA-Z_][a-zA-Z0-9_]*/), $.variable),
+          optional($.expansion_modifier),
           token.immediate('}'),
+        ),
+      ),
+
+    // Shell-style parameter expansion modifier inside ${...}: a default/
+    // alternate/error operator (:- - :+ + :? ?) followed by a word that may
+    // itself contain nested expansions. The word runs to the matching brace.
+    // The pattern-manipulation operators (# ## % %% / //) are omitted: they
+    // are pre-release in BuildKit and `#` collides with comment lexing.
+    expansion_modifier: $ =>
+      seq(
+        alias(
+          token.immediate(/:?[-+?]/),
+          $.expansion_operator,
+        ),
+        repeat(
+          choice(
+            token.immediate(/[^}$]+/),
+            $._immediate_expansion,
+          ),
         ),
       ),
 
