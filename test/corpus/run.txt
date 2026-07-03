@@ -211,6 +211,7 @@ EOF
     (shell_command
       (heredoc_marker))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end))))
 
 ==================
