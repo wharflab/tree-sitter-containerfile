@@ -2386,21 +2386,11 @@
                 }
               },
               {
-                "type": "ALIAS",
+                "type": "IMMEDIATE_TOKEN",
                 "content": {
-                  "type": "SYMBOL",
-                  "name": "single_quoted_escape_sequence"
-                },
-                "named": true,
-                "value": "escape_sequence"
-              },
-              {
-                "type": "STRING",
-                "value": "\\"
-              },
-              {
-                "type": "STRING",
-                "value": "`"
+                  "type": "PATTERN",
+                  "value": "[\\\\`]"
+                }
               }
             ]
           }
@@ -2646,14 +2636,7 @@
       "type": "IMMEDIATE_TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "[\\\\`][\\\\`\"]"
-      }
-    },
-    "single_quoted_escape_sequence": {
-      "type": "IMMEDIATE_TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "[\\\\`][\\\\`']"
+        "value": "[\\\\`][\\\\`\"$]"
       }
     },
     "_non_newline_whitespace": {

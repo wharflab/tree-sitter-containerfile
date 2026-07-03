@@ -653,16 +653,20 @@ export default grammar({
         '"',
       ),
 
-    // same as double_quoted_string but without $-expansions:
-    single_quoted_string: ($) =>
+    // Single-quoted strings are fully literal in Dockerfile shell parsing:
+    // there is no escape processing (a backslash or backtick before the
+    // closing quote does NOT escape it) and no $-expansions. A backslash/
+    // backtick before a newline is still a line continuation (BuildKit joins
+    // physical lines before quote processing), which is handled by the
+    // external line_continuation extra; an isolated backslash/backtick is
+    // literal text.
+    single_quoted_string: () =>
       seq(
         '\'',
         repeat(
           choice(
             token.immediate(/[^'\n\\`]+/),
-            alias($.single_quoted_escape_sequence, $.escape_sequence),
-            '\\',
-            '`',
+            token.immediate(/[\\`]/),
           ),
         ),
         '\'',
@@ -734,12 +738,11 @@ export default grammar({
         $._immediate_expansion,
       ),
 
+    // The active escape char (\ by default, or ` via `# escape=`) escapes
+    // ", \, `, and $ inside double-quoted strings. A \$ is literal text (the
+    // following identifier is NOT expanded).
     double_quoted_escape_sequence: () => token.immediate(
-      /[\\`][\\`"]/,
-    ),
-
-    single_quoted_escape_sequence: () => token.immediate(
-      /[\\`][\\`']/,
+      /[\\`][\\`"$]/,
     ),
 
     _non_newline_whitespace: () => token.immediate(/[\t ]+/),
