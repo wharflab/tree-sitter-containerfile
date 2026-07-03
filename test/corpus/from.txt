@@ -186,8 +186,8 @@ FROM a AS b $C
   (from_instruction
     (image_spec
       name: (image_name))
-    (ERROR)
     as: (image_alias
+      (ERROR)
       (expansion
         (variable)))))
 
@@ -204,3 +204,19 @@ FROM alpine AS my.stage
     (image_spec
       name: (image_name))
     as: (image_alias)))
+
+==================
+Platform flag with expansion
+==================
+
+FROM --platform=$BUILDPLATFORM alpine
+
+---
+
+(source_file
+  (from_instruction
+    (param
+      value: (expansion
+        (variable)))
+    (image_spec
+      name: (image_name))))

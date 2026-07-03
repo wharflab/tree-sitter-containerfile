@@ -186,6 +186,7 @@ export default grammar({
       seq(
         alias(/[aA][dD][dD]/, 'ADD'),
         repeat($.param),
+        optional(seq($.end_of_options, $._non_newline_whitespace)),
         choice(
           $.json_string_array,
           seq(
@@ -202,6 +203,7 @@ export default grammar({
       seq(
         alias(/[cC][oO][pP][yY]/, 'COPY'),
         repeat($.param),
+        optional(seq($.end_of_options, $._non_newline_whitespace)),
         choice(
           $.json_string_array,
           seq(
@@ -557,17 +559,32 @@ export default grammar({
       ),
 
     // Generic parsing of options passed right after an instruction name.
-    param: () =>
+    // The value surfaces $-expansions (e.g. --platform=$BUILDPLATFORM,
+    // --chown=$USER:$GROUP) as expansion nodes so they can be highlighted.
+    param: ($) =>
       seq(
         '--',
         field('name', token.immediate(/[a-z][-a-z]*/)),
         optional(
           seq(
             token.immediate('='),
-            field('value', token.immediate(/[^\s]+/)),
+            field('value', $._param_value),
           ),
         ),
       ),
+
+    _param_value: ($) =>
+      repeat1(
+        choice(
+          token.immediate(/[^\s\$]+/),
+          $._immediate_expansion,
+        ),
+      ),
+
+    // POSIX end-of-options separator (`COPY -- src dst`). BuildKit stops flag
+    // collection here; it's the documented way to pass a source path that
+    // begins with `-`. A bare `--` not followed by a flag name.
+    end_of_options: () => '--',
 
     // Specific parsing of the --mount option e.g.
     //
@@ -588,11 +605,17 @@ export default grammar({
       ),
     ),
 
-    mount_param_param: () => seq(
+    mount_param_param: ($) => seq(
       token.immediate(/[^\s=,]+/),
       optional(seq(
         token.immediate('='),
-        token.immediate(/[^\s=,]+/),
+        // The value may contain $-expansions (e.g. source=${SRC}).
+        repeat1(
+          choice(
+            token.immediate(/[^\s=,\$]+/),
+            $._immediate_expansion,
+          ),
+        ),
       )),
     ),
 

@@ -8,6 +8,10 @@
       "required": true,
       "types": [
         {
+          "type": "end_of_options",
+          "named": true
+        },
+        {
           "type": "heredoc_block",
           "named": true
         },
@@ -103,6 +107,10 @@
       "required": true,
       "types": [
         {
+          "type": "end_of_options",
+          "named": true
+        },
+        {
           "type": "heredoc_block",
           "named": true
         },
@@ -144,6 +152,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "end_of_options",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "entrypoint_instruction",
@@ -547,7 +560,17 @@
   {
     "type": "mount_param_param",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "expansion",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "onbuild_instruction",
@@ -639,7 +662,18 @@
   {
     "type": "param",
     "named": true,
-    "fields": {}
+    "fields": {
+      "value": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "expansion",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "path",

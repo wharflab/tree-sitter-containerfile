@@ -87,3 +87,23 @@ COPY --chmod=0644 [ "test file", "/tmp/test file" ]
     (json_string_array
       (json_string)
       (json_string))))
+
+==================
+End-of-options separator
+==================
+
+COPY -- a.txt /app/
+COPY --chown=1000:1000 -- b.txt /app/
+
+---
+
+(source_file
+  (copy_instruction
+    (end_of_options)
+    (path)
+    (path))
+  (copy_instruction
+    (param)
+    (end_of_options)
+    (path)
+    (path)))
