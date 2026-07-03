@@ -640,17 +640,16 @@ export default grammar({
       ),
     ),
 
-    mount_param_param: ($) => seq(
+    mount_param_param: () => seq(
       token.immediate(/[^\s=,]+/),
       optional(seq(
         token.immediate('='),
-        // The value may contain $-expansions (e.g. source=${SRC}).
-        repeat1(
-          choice(
-            token.immediate(/[^\s=,\$]+/),
-            $._immediate_expansion,
-          ),
-        ),
+        // The value is captured as a single literal run. (Unlike generic
+        // --flag values, mount option values do not surface $-expansions as
+        // nodes: the comma-separated mount grammar makes interleaving literal
+        // text with expansions ambiguous, so we keep the whole value literal
+        // to guarantee complete, non-truncating capture.)
+        token.immediate(/[^\s,]+/),
       )),
     ),
 

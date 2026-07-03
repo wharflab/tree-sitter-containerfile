@@ -592,17 +592,7 @@
   {
     "type": "mount_param_param",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "expansion",
-          "named": true
-        }
-      ]
-    }
+    "fields": {}
   },
   {
     "type": "onbuild_instruction",

@@ -2266,22 +2266,10 @@
                   }
                 },
                 {
-                  "type": "REPEAT1",
+                  "type": "IMMEDIATE_TOKEN",
                   "content": {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "IMMEDIATE_TOKEN",
-                        "content": {
-                          "type": "PATTERN",
-                          "value": "[^\\s=,\\$]+"
-                        }
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "_immediate_expansion"
-                      }
-                    ]
+                    "type": "PATTERN",
+                    "value": "[^\\s,]+"
                   }
                 }
               ]

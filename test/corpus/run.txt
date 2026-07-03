@@ -251,8 +251,21 @@ RUN --mount=type=bind,source=${SRC},target=/app ls
   (run_instruction
     (mount_param
       value: (mount_param_param)
-      value: (mount_param_param
-        (expansion
-          (variable)))
+      value: (mount_param_param)
+      value: (mount_param_param))
+    (shell_command)))
+
+==================
+Mount option value mixing literal and expansion
+==================
+
+RUN --mount=type=cache,target=/root/${DIR}/cache go build
+
+---
+
+(source_file
+  (run_instruction
+    (mount_param
+      value: (mount_param_param)
       value: (mount_param_param))
     (shell_command)))
