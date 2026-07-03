@@ -6,7 +6,7 @@
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif
 
-#define LANGUAGE_VERSION 14
+#define LANGUAGE_VERSION 15
 #define STATE_COUNT 418
 #define LARGE_STATE_COUNT 2
 #define SYMBOL_COUNT 216
@@ -2930,30 +2930,35 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       if (lookahead != 0 &&
           lookahead != '\t' &&
           lookahead != '\n' &&
+          lookahead != '\r' &&
           lookahead != ' ') ADVANCE(205);
       END_STATE();
     case 135:
       if (lookahead != 0 &&
           lookahead != '\t' &&
           lookahead != '\n' &&
+          lookahead != '\r' &&
           lookahead != ' ') ADVANCE(206);
       END_STATE();
     case 136:
       if (lookahead != 0 &&
           lookahead != '\t' &&
           lookahead != '\n' &&
+          lookahead != '\r' &&
           lookahead != ' ') ADVANCE(207);
       END_STATE();
     case 137:
       if (lookahead != 0 &&
           lookahead != '\t' &&
           lookahead != '\n' &&
+          lookahead != '\r' &&
           lookahead != ' ') ADVANCE(208);
       END_STATE();
     case 138:
       if (lookahead != 0 &&
           lookahead != '\t' &&
           lookahead != '\n' &&
+          lookahead != '\r' &&
           lookahead != ' ') ADVANCE(262);
       END_STATE();
     case 139:
@@ -3608,6 +3613,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       ACCEPT_TOKEN(aux_sym__healthcheck_raw_fragment_atom_token11);
       if (lookahead != 0 &&
           lookahead != '\n' &&
+          lookahead != '\r' &&
           lookahead != ',' &&
           lookahead != '-' &&
           lookahead != '=') ADVANCE(211);
@@ -3630,6 +3636,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       if (lookahead != 0 &&
           lookahead != '\t' &&
           lookahead != '\n' &&
+          lookahead != '\r' &&
           lookahead != ' ') ADVANCE(205);
       END_STATE();
     case 216:
@@ -3637,6 +3644,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       if (lookahead != 0 &&
           lookahead != '\t' &&
           lookahead != '\n' &&
+          lookahead != '\r' &&
           lookahead != ' ') ADVANCE(262);
       END_STATE();
     case 217:
@@ -4129,7 +4137,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
   }
 }
 
-static const TSLexMode ts_lex_modes[STATE_COUNT] = {
+static const TSLexerMode ts_lex_modes[STATE_COUNT] = {
   [0] = {.lex_state = 0, .external_lex_state = 1},
   [1] = {.lex_state = 145, .external_lex_state = 2},
   [2] = {.lex_state = 145, .external_lex_state = 2},
@@ -11568,6 +11576,7 @@ TS_PUBLIC const TSLanguage *tree_sitter_containerfile(void) {
     .state_count = STATE_COUNT,
     .large_state_count = LARGE_STATE_COUNT,
     .production_id_count = PRODUCTION_ID_COUNT,
+    .supertype_count = SUPERTYPE_COUNT,
     .field_count = FIELD_COUNT,
     .max_alias_sequence_length = MAX_ALIAS_SEQUENCE_LENGTH,
     .parse_table = &ts_parse_table[0][0],
@@ -11594,6 +11603,13 @@ TS_PUBLIC const TSLanguage *tree_sitter_containerfile(void) {
       tree_sitter_containerfile_external_scanner_deserialize,
     },
     .primary_state_ids = ts_primary_state_ids,
+    .name = "containerfile",
+    .max_reserved_word_set_size = 0,
+    .metadata = {
+      .major_version = 0,
+      .minor_version = 8,
+      .patch_version = 1,
+    },
   };
   return &language;
 }

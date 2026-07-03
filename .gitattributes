@@ -1,5 +1,9 @@
 * text eol=lf
 
+# This corpus file intentionally contains CRLF line endings to exercise
+# Windows/autocrlf line-continuation handling; do not normalize it.
+test/corpus/crlf.txt -text
+
 src/*.json linguist-generated
 src/parser.c linguist-generated
 src/tree_sitter/* linguist-generated
