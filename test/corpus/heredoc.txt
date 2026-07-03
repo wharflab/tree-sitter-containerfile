@@ -23,6 +23,7 @@ COPY --from=build /dest /dest
     (shell_command
       (heredoc_marker))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (from_instruction
     (image_spec
@@ -57,6 +58,7 @@ COPY --from=build /dest /dest
     (shell_command
       (heredoc_marker))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (from_instruction
     (image_spec
@@ -96,6 +98,7 @@ COPY --from=build /dest /dest
     (shell_command
       (heredoc_marker))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (from_instruction
     (image_spec
@@ -133,6 +136,7 @@ COPY --from=build /dest /dest
     (shell_command
       (heredoc_marker))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (from_instruction
     (image_spec
@@ -188,8 +192,10 @@ COPY --from=build /dest /
       (line_continuation)
       (heredoc_marker))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (run_instruction
     (shell_command
@@ -197,10 +203,13 @@ COPY --from=build /dest /
       (heredoc_marker)
       (heredoc_marker))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (from_instruction
     (image_spec
@@ -262,6 +271,7 @@ COPY --from=build /dest /
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (copy_instruction
     (path
@@ -270,8 +280,10 @@ COPY --from=build /dest /
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (run_instruction
     (shell_command))
@@ -281,6 +293,7 @@ COPY --from=build /dest /
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (copy_instruction
     (param)
@@ -288,6 +301,7 @@ COPY --from=build /dest /
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (copy_instruction
     (param)
@@ -295,6 +309,7 @@ COPY --from=build /dest /
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (run_instruction
     (shell_command
@@ -349,42 +364,49 @@ EOF
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (copy_instruction
     (path
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (copy_instruction
     (path
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (copy_instruction
     (path
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (copy_instruction
     (path
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (copy_instruction
     (path
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (copy_instruction
     (path
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end))))
 
 ==================
@@ -410,6 +432,7 @@ EOF
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end))))
 
 ==================
@@ -438,10 +461,12 @@ EOF
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end)))
   (copy_instruction
     (path
       (heredoc_marker))
     (path)
     (heredoc_block
+      (heredoc_content)
       (heredoc_end))))

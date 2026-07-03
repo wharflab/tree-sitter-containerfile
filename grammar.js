@@ -395,9 +395,15 @@ export default grammar({
         // We also alias this token to hide it from the output like all other
         // whitespace.
         $._heredoc_nl,
-        repeat(seq($._heredoc_line, '\n')),
+        // The body (everything before the closing delimiter) is wrapped in a
+        // named node so language injection can target exactly the redirected
+        // content, excluding the heredoc_end delimiter line.
+        optional($.heredoc_content),
         $.heredoc_end,
       ),
+
+    heredoc_content: ($) =>
+      repeat1(seq($._heredoc_line, '\n')),
 
     path: ($) =>
       seq(

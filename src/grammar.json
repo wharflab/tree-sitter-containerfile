@@ -1253,26 +1253,38 @@
           "name": "_heredoc_nl"
         },
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_heredoc_line"
-              },
-              {
-                "type": "STRING",
-                "value": "\n"
-              }
-            ]
-          }
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "heredoc_content"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "SYMBOL",
           "name": "heredoc_end"
         }
       ]
+    },
+    "heredoc_content": {
+      "type": "REPEAT1",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_heredoc_line"
+          },
+          {
+            "type": "STRING",
+            "value": "\n"
+          }
+        ]
+      }
     },
     "path": {
       "type": "SEQ",

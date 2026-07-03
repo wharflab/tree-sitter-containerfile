@@ -352,15 +352,24 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "heredoc_content",
+          "named": true
+        },
         {
           "type": "heredoc_end",
           "named": true
         }
       ]
     }
+  },
+  {
+    "type": "heredoc_content",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "image_alias",
