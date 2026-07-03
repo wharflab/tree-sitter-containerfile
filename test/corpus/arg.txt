@@ -94,3 +94,19 @@ foo
 
 (source_file
 	(ERROR))
+
+==================
+Adjacent quoted and unquoted default segments concatenate
+==================
+
+ARG X=pre"mid"post
+
+---
+
+(source_file
+  (arg_instruction
+    (arg_pair
+      name: (unquoted_string)
+      default: (unquoted_string)
+      default: (double_quoted_string)
+      default: (unquoted_string))))

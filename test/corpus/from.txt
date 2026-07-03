@@ -185,9 +185,9 @@ FROM a AS b $C
 (source_file
   (from_instruction
     (image_spec
-      (image_name))
+      name: (image_name))
     (ERROR)
-    (image_alias
+    as: (image_alias
       (expansion
         (variable)))))
 

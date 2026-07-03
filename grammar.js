@@ -27,6 +27,63 @@ const spacedValueContinuation = ($, atom) =>
     repeat1(atom),
   );
 
+/**
+ * The inner content of a double-quoted string, shared by the standalone rule
+ * and the immediate variant used for adjacent-segment concatenation.
+ * @param {GrammarSymbols<string>} $
+ * @returns {RuleOrLiteral}
+ */
+const doubleQuotedBody = ($) =>
+  repeat(
+    choice(
+      token.immediate(/[^"\n\\`\$]+/),
+      alias($.double_quoted_escape_sequence, $.escape_sequence),
+      token.immediate(/\$\(/),
+      '\\',
+      '`',
+      $._immediate_expansion,
+    ),
+  );
+
+/**
+ * The inner content of a single-quoted string (fully literal).
+ * @returns {RuleOrLiteral}
+ */
+const singleQuotedBody = () =>
+  repeat(
+    choice(
+      token.immediate(/[^'\n\\`]+/),
+      token.immediate(/[\\`]/),
+    ),
+  );
+
+/**
+ * A `KEY=` value made of one or more directly-adjacent segments that
+ * concatenate, mirroring shell word parsing (K=pre"mid"post -> premidpost).
+ * The first segment may lead with a quoted string (optionally trailed by an
+ * unquoted run) or a bare unquoted run; each subsequent quoted segment must
+ * abut the previous one and may itself be trailed by an unquoted run.
+ * @param {GrammarSymbols<string>} $
+ * @param {RuleOrLiteral} leadingQuoted
+ * @returns {RuleOrLiteral}
+ */
+const adjacentValue = ($, leadingQuoted) =>
+  seq(
+    choice(
+      seq(leadingQuoted, optional($.unquoted_string)),
+      $.unquoted_string,
+    ),
+    repeat(
+      seq(
+        choice(
+          alias($._immediate_double_quoted_string, $.double_quoted_string),
+          alias($._immediate_single_quoted_string, $.single_quoted_string),
+        ),
+        optional($.unquoted_string),
+      ),
+    ),
+  );
+
 export default grammar({
   name: 'containerfile',
 
@@ -222,10 +279,12 @@ export default grammar({
           seq(
             token.immediate('='),
             field('default',
-              choice(
-                $.double_quoted_string,
-                $.single_quoted_string,
-                $.unquoted_string,
+              adjacentValue(
+                $,
+                choice(
+                  $.double_quoted_string,
+                  $.single_quoted_string,
+                ),
               )),
           ),
         ),
@@ -390,11 +449,18 @@ export default grammar({
         ),
       ),
 
+    // A value is one or more directly-adjacent segments (quoted or unquoted)
+    // that concatenate, mirroring shell word parsing (ENV K=pre"mid"post ->
+    // premidpost). A quoted segment is the boundary between unquoted runs; an
+    // unquoted run immediately after a closing quote abuts it. unquoted_string
+    // is itself greedy, so it only ever appears once between quoted segments.
     _env_assignment_value: ($) =>
-      choice(
-        $.double_quoted_string,
-        $._env_single_quoted_string_with_trailing_quote,
-        $.unquoted_string,
+      adjacentValue(
+        $,
+        choice(
+          $.double_quoted_string,
+          $._env_single_quoted_string_with_trailing_quote,
+        ),
       ),
 
     _env_single_quoted_string_with_trailing_quote: ($) =>
@@ -435,10 +501,12 @@ export default grammar({
         field('key', $._label_key),
         token.immediate('='),
         field('value',
-          choice(
-            $.double_quoted_string,
-            $.single_quoted_string,
-            $.unquoted_string,
+          adjacentValue(
+            $,
+            choice(
+              $.double_quoted_string,
+              $.single_quoted_string,
+            ),
           )),
       ),
 
@@ -638,20 +706,12 @@ export default grammar({
     ),
 
     double_quoted_string: ($) =>
-      seq(
-        '"',
-        repeat(
-          choice(
-            token.immediate(/[^"\n\\`\$]+/),
-            alias($.double_quoted_escape_sequence, $.escape_sequence),
-            token.immediate(/\$\(/),
-            '\\',
-            '`',
-            $._immediate_expansion,
-          ),
-        ),
-        '"',
-      ),
+      seq('"', doubleQuotedBody($), '"'),
+
+    // Same as double_quoted_string but the opening quote must abut the
+    // preceding token, so it can concatenate onto an adjacent value segment.
+    _immediate_double_quoted_string: ($) =>
+      seq(token.immediate('"'), doubleQuotedBody($), '"'),
 
     // Single-quoted strings are fully literal in Dockerfile shell parsing:
     // there is no escape processing (a backslash or backtick before the
@@ -661,16 +721,10 @@ export default grammar({
     // external line_continuation extra; an isolated backslash/backtick is
     // literal text.
     single_quoted_string: () =>
-      seq(
-        '\'',
-        repeat(
-          choice(
-            token.immediate(/[^'\n\\`]+/),
-            token.immediate(/[\\`]/),
-          ),
-        ),
-        '\'',
-      ),
+      seq('\'', singleQuotedBody(), '\''),
+
+    _immediate_single_quoted_string: () =>
+      seq(token.immediate('\''), singleQuotedBody(), '\''),
 
     unquoted_string: ($) =>
       repeat1(
@@ -716,10 +770,15 @@ export default grammar({
         $._immediate_expansion,
       ),
 
+    // The legacy `ENV KEY value` value must not START with a quote (a leading
+    // quote is parsed as a proper quoted string by _spaced_env_pair), so the
+    // first fragment excludes quotes. Later atoms keep quotes as literal text
+    // so a mid-line quote (ENV GREETING hello "world") does not error.
     _spaced_env_value: ($) =>
-      spacedValue(
-        $._spaced_env_value_atom,
-        $._spaced_env_value_continuation,
+      seq(
+        $._spaced_env_value_first_fragment,
+        repeat($._spaced_env_value_atom),
+        repeat($._spaced_env_value_continuation),
       ),
 
     _continued_spaced_env_value: ($) =>
@@ -736,9 +795,20 @@ export default grammar({
     _spaced_env_value_atom: ($) =>
       choice($._spaced_env_value_fragment, $._non_newline_whitespace),
 
-    _spaced_env_value_fragment: ($) =>
+    // First fragment of a spaced value: excludes a leading quote.
+    _spaced_env_value_first_fragment: ($) =>
       choice(
         token.immediate(/[^\s\n\"'\\`\$]+/),
+        token.immediate(/[\\`] /),
+        token.immediate(/[\\`][^\s\n]/),
+        $._immediate_expansion,
+      ),
+
+    // Legacy `ENV KEY value` takes the rest of the line as the value, with
+    // quotes kept as literal text (matching _spaced_label_value_fragment).
+    _spaced_env_value_fragment: ($) =>
+      choice(
+        token.immediate(/[^\s\n\\`\$]+/),
         token.immediate(/[\\`] /),
         token.immediate(/[\\`][^\s\n]/),
         $._immediate_expansion,
