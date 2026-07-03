@@ -38,3 +38,41 @@ EXPOSE 9009-9010
 (source_file
 	(expose_instruction
 		(expose_port)))
+
+==================
+SCTP protocol
+==================
+
+EXPOSE 80/sctp
+
+---
+
+(source_file
+  (expose_instruction
+    (expose_port)))
+
+==================
+Uppercase protocol
+==================
+
+EXPOSE 80/TCP
+
+---
+
+(source_file
+  (expose_instruction
+    (expose_port)))
+
+==================
+Variable port with protocol
+==================
+
+EXPOSE $PORT/tcp
+
+---
+
+(source_file
+  (expose_instruction
+    (expose_port
+      (expansion
+        (variable)))))

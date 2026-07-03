@@ -63,3 +63,34 @@ USER a: b
     (unquoted_string)
     (ERROR)
     (unquoted_string)))
+
+==================
+Leading underscore system user
+==================
+
+USER _apt
+USER _chrony
+
+---
+
+(source_file
+  (user_instruction
+    user: (unquoted_string))
+  (user_instruction
+    user: (unquoted_string)))
+
+==================
+Dotted user and group names
+==================
+
+USER my.user
+USER app:my.group
+
+---
+
+(source_file
+  (user_instruction
+    user: (unquoted_string))
+  (user_instruction
+    user: (unquoted_string)
+    group: (unquoted_string)))

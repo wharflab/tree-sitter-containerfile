@@ -116,7 +116,7 @@ export default grammar({
     expose_instruction: ($) =>
       seq(
         alias(/[eE][xX][pP][oO][sS][eE]/, 'EXPOSE'),
-        repeat1(choice($.expose_port, $.expansion)),
+        repeat1($.expose_port),
       ),
 
     env_instruction: ($) =>
@@ -187,7 +187,7 @@ export default grammar({
 
     _user_name_or_group: ($) =>
       seq(
-        choice(/([a-zA-Z][-A-Za-z0-9_]*|[0-9]+)/, $.expansion),
+        choice(/([a-zA-Z_][-A-Za-z0-9_.]*|[0-9]+)/, $.expansion),
         repeat($._immediate_user_name_or_group_fragment),
       ),
 
@@ -197,7 +197,7 @@ export default grammar({
 
     _immediate_user_name_or_group_fragment: ($) =>
       choice(
-        token.immediate(/([a-zA-Z][-a-zA-Z0-9_]*|[0-9]+)/),
+        token.immediate(/([a-zA-Z_][-a-zA-Z0-9_.]*|[0-9]+)/),
         $._immediate_expansion,
       ),
 
@@ -422,7 +422,13 @@ export default grammar({
     _env_key: ($) =>
       alias(/[a-zA-Z_][a-zA-Z0-9_]*/, $.unquoted_string),
 
-    expose_port: () => seq(/\d+(-\d+)?/, optional(choice('/tcp', '/udp'))),
+    expose_port: ($) =>
+      seq(
+        choice(/\d+(-\d+)?/, $.expansion),
+        // Protocol is optional and case-insensitive; Docker normalizes it and
+        // accepts tcp, udp, and sctp. It must abut the port (no space).
+        optional(token.immediate(/\/[a-zA-Z]+/)),
+      ),
 
     label_pair: ($) =>
       seq(
@@ -523,8 +529,8 @@ export default grammar({
     ),
 
     image_alias: ($) => seq(
-      choice(/[-a-zA-Z0-9_]+/, $.expansion),
-      repeat(choice(token.immediate(/[-a-zA-Z0-9_]+/), $._immediate_expansion)),
+      choice(/[-a-zA-Z0-9_.]+/, $.expansion),
+      repeat(choice(token.immediate(/[-a-zA-Z0-9_.]+/), $._immediate_expansion)),
     ),
 
     _json_or_shell_command: ($) =>

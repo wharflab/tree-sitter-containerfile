@@ -237,10 +237,6 @@
       "required": true,
       "types": [
         {
-          "type": "expansion",
-          "named": true
-        },
-        {
           "type": "expose_port",
           "named": true
         }
@@ -250,7 +246,17 @@
   {
     "type": "expose_port",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "expansion",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "from_instruction",
@@ -942,14 +948,6 @@
   },
   {
     "type": "--",
-    "named": false
-  },
-  {
-    "type": "/tcp",
-    "named": false
-  },
-  {
-    "type": "/udp",
     "named": false
   },
   {

@@ -190,3 +190,17 @@ FROM a AS b $C
     (image_alias
       (expansion
         (variable)))))
+
+==================
+Stage name with dot
+==================
+
+FROM alpine AS my.stage
+
+---
+
+(source_file
+  (from_instruction
+    (image_spec
+      name: (image_name))
+    as: (image_alias)))

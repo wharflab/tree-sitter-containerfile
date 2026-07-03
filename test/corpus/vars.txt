@@ -146,8 +146,9 @@ EXPOSE $FOO
 
 (source_file
   (expose_instruction
-    (expansion
-      (variable))))
+    (expose_port
+      (expansion
+        (variable)))))
 
 ================================================================================
 From
