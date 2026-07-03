@@ -543,7 +543,16 @@ export default grammar({
     image_name: ($) =>
       seq(
         choice(/[^@:\s\$-]/, $.expansion),
-        repeat(choice(token.immediate(/[^@:\s\$]+/), $._immediate_expansion)),
+        repeat(
+          choice(
+            token.immediate(/[^@:\s\$]+/),
+            // A registry host may include a port: the `:PORT/` before the
+            // repository path is part of the name, not the tag (which is the
+            // colon after the final path segment).
+            token.immediate(/:\d+\//),
+            $._immediate_expansion,
+          ),
+        ),
       ),
 
     image_tag: ($) =>
