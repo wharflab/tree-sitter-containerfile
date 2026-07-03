@@ -679,6 +679,12 @@ export default grammar({
           token.immediate(/[\\`] /),
           token.immediate(/[\\`][^\s\n]/),
           $._immediate_expansion,
+          // A `$` not starting a valid expansion is literal text. The first
+          // form matches `$` plus the following non-identifier/brace char that
+          // is not a value terminator (handles $5, $$, cost:$5.00); the second
+          // matches a `$` at the end of the value. A real expansion still wins
+          // for $ident and ${...}.
+          token.immediate(/\$[^a-zA-Z_{\s"']/),
         ),
       ),
 
