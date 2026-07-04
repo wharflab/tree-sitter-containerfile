@@ -37,6 +37,7 @@ enum TokenType {
     HEREDOC_END,
     HEREDOC_NL,
     LITERAL_DOLLAR,
+    KEYWORD_TERMINATOR,
     ERROR_SENTINEL,
 };
 
@@ -807,6 +808,24 @@ bool tree_sitter_containerfile_external_scanner_scan(void *payload, TSLexer *lex
     if (state->in_heredoc &&
         (valid_symbols[HEREDOC_LINE] || valid_symbols[HEREDOC_END])) {
         return scan_content(state, lexer, valid_symbols);
+    }
+
+    // A zero-width word boundary right after an instruction keyword: only
+    // whitespace, a line end, or EOF may follow, so glued forms (FROMalpine)
+    // fail to parse. Checked before scan_line_continuation, which skips
+    // inline whitespace and would move the lexer off the boundary. When the
+    // lookahead is the escape char, we fall through instead of failing so a
+    // line continuation is consumed as an extra first and the boundary is
+    // re-checked at the start of the continued line; this matches BuildKit's
+    // join-then-tokenize semantics (`FROM\<nl> alpine` is valid, while
+    // `FROM\<nl>alpine` joins to FROMalpine and is not). Suppressed during
+    // error recovery (ERROR_SENTINEL valid): zero-width tokens there can
+    // prevent the parser from making progress.
+    if (valid_symbols[KEYWORD_TERMINATOR] && !valid_symbols[ERROR_SENTINEL] &&
+        (is_inline_space(lexer->lookahead) || is_line_end(lexer))) {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = KEYWORD_TERMINATOR;
+        return true;
     }
 
     if (valid_symbols[REQUIRED_LINE_CONTINUATION] ||

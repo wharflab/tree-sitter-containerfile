@@ -17,6 +17,22 @@ const continuedSpacedValue = (continuation) =>
   seq(continuation, repeat(continuation));
 
 /**
+ * An instruction keyword (case-insensitive regex) followed by the external
+ * scanner's zero-width word-boundary token, which succeeds only when the
+ * keyword is followed by whitespace, a line end, or EOF. This rejects glued
+ * forms like `FROMalpine` or `RUNecho`, which regex tokens alone cannot do
+ * (tree-sitter regexes have no lookahead, and `word:`-based keyword
+ * extraction only applies to string-literal keywords).
+ *
+ * @param {GrammarSymbols<string>} $
+ * @param {RegExp} pattern
+ * @param {string} name
+ * @returns {RuleOrLiteral}
+ */
+const keyword = ($, pattern, name) =>
+  seq(alias(pattern, name), $._keyword_terminator);
+
+/**
  * @param {GrammarSymbols<string>} $
  * @param {RuleOrLiteral} atom
  * @returns {RuleOrLiteral}
@@ -105,6 +121,7 @@ export default grammar({
     $.heredoc_end,
     $._heredoc_nl,
     $._literal_dollar,
+    $._keyword_terminator,
     $.error_sentinel,
   ],
 
@@ -146,15 +163,15 @@ export default grammar({
 
     from_instruction: ($) =>
       seq(
-        alias(/[fF][rR][oO][mM]/, 'FROM'),
+        keyword($, /[fF][rR][oO][mM]/, 'FROM'),
         optional($.param),
         $.image_spec,
-        optional(seq(alias(/[aA][sS]/, 'AS'), field('as', $.image_alias))),
+        optional(seq(keyword($, /[aA][sS]/, 'AS'), field('as', $.image_alias))),
       ),
 
     run_instruction: ($) =>
       seq(
-        alias(/[rR][uU][nN]/, 'RUN'),
+        keyword($, /[rR][uU][nN]/, 'RUN'),
         repeat(
           choice(
             $.param,
@@ -167,31 +184,31 @@ export default grammar({
 
     cmd_instruction: ($) =>
       seq(
-        alias(/[cC][mM][dD]/, 'CMD'),
+        keyword($, /[cC][mM][dD]/, 'CMD'),
         $._json_or_shell_command,
       ),
 
     label_instruction: ($) =>
       seq(
-        alias(/[lL][aA][bB][eE][lL]/, 'LABEL'),
+        keyword($, /[lL][aA][bB][eE][lL]/, 'LABEL'),
         choice(repeat1($.label_pair), alias($._spaced_label_pair, $.label_pair)),
       ),
 
     expose_instruction: ($) =>
       seq(
-        alias(/[eE][xX][pP][oO][sS][eE]/, 'EXPOSE'),
+        keyword($, /[eE][xX][pP][oO][sS][eE]/, 'EXPOSE'),
         repeat1($.expose_port),
       ),
 
     env_instruction: ($) =>
       seq(
-        alias(/[eE][nN][vV]/, 'ENV'),
+        keyword($, /[eE][nN][vV]/, 'ENV'),
         choice(repeat1($.env_pair), alias($._spaced_env_pair, $.env_pair)),
       ),
 
     add_instruction: ($) =>
       seq(
-        alias(/[aA][dD][dD]/, 'ADD'),
+        keyword($, /[aA][dD][dD]/, 'ADD'),
         repeat($.param),
         choice(
           $.json_string_array,
@@ -217,7 +234,7 @@ export default grammar({
 
     copy_instruction: ($) =>
       seq(
-        alias(/[cC][oO][pP][yY]/, 'COPY'),
+        keyword($, /[cC][oO][pP][yY]/, 'COPY'),
         repeat($.param),
         choice(
           $.json_string_array,
@@ -241,13 +258,13 @@ export default grammar({
 
     entrypoint_instruction: ($) =>
       seq(
-        alias(/[eE][nN][tT][rR][yY][pP][oO][iI][nN][tT]/, 'ENTRYPOINT'),
+        keyword($, /[eE][nN][tT][rR][yY][pP][oO][iI][nN][tT]/, 'ENTRYPOINT'),
         $._json_or_shell_command,
       ),
 
     volume_instruction: ($) =>
       seq(
-        alias(/[vV][oO][lL][uU][mM][eE]/, 'VOLUME'),
+        keyword($, /[vV][oO][lL][uU][mM][eE]/, 'VOLUME'),
         choice(
           $.json_string_array,
           seq($.path, repeat(seq($._non_newline_whitespace, $.path))),
@@ -256,7 +273,7 @@ export default grammar({
 
     user_instruction: ($) =>
       seq(
-        alias(/[uU][sS][eE][rR]/, 'USER'),
+        keyword($, /[uU][sS][eE][rR]/, 'USER'),
         field('user', alias($._user_name_or_group, $.unquoted_string)),
         optional(
           seq(
@@ -284,11 +301,11 @@ export default grammar({
       ),
 
     workdir_instruction: ($) =>
-      seq(alias(/[wW][oO][rR][kK][dD][iI][rR]/, 'WORKDIR'), $.path),
+      seq(keyword($, /[wW][oO][rR][kK][dD][iI][rR]/, 'WORKDIR'), $.path),
 
     arg_instruction: ($) =>
       seq(
-        alias(/[aA][rR][gG]/, 'ARG'),
+        keyword($, /[aA][rR][gG]/, 'ARG'),
         repeat1(
           seq(
             $._non_newline_whitespace,
@@ -319,11 +336,11 @@ export default grammar({
       ),
 
     onbuild_instruction: ($) =>
-      seq(alias(/[oO][nN][bB][uU][iI][lL][dD]/, 'ONBUILD'), $._instruction),
+      seq(keyword($, /[oO][nN][bB][uU][iI][lL][dD]/, 'ONBUILD'), $._instruction),
 
     stopsignal_instruction: ($) =>
       seq(
-        alias(/[sS][tT][oO][pP][sS][iI][gG][nN][aA][lL]/, 'STOPSIGNAL'),
+        keyword($, /[sS][tT][oO][pP][sS][iI][gG][nN][aA][lL]/, 'STOPSIGNAL'),
         $._stopsignal_value,
       ),
 
@@ -338,7 +355,7 @@ export default grammar({
 
     healthcheck_instruction: ($) =>
       seq(
-        alias(/[hH][eE][aA][lL][tT][hH][cC][hH][eE][cC][kK]/, 'HEALTHCHECK'),
+        keyword($, /[hH][eE][aA][lL][tT][hH][cC][hH][eE][cC][kK]/, 'HEALTHCHECK'),
         optional(
           choice(
             'NONE',
@@ -355,7 +372,7 @@ export default grammar({
 
     _healthcheck_cmd_instruction: ($) =>
       seq(
-        alias(/[cC][mM][dD]/, 'CMD'),
+        keyword($, /[cC][mM][dD]/, 'CMD'),
         optional(choice($.json_string_array, $.shell_command)),
       ),
 
@@ -396,17 +413,18 @@ export default grammar({
       ),
 
     shell_instruction: ($) =>
-      seq(alias(/[sS][hH][eE][lL][lL]/, 'SHELL'), $.json_string_array),
+      seq(keyword($, /[sS][hH][eE][lL][lL]/, 'SHELL'), $.json_string_array),
 
-    maintainer_instruction: () =>
+    maintainer_instruction: ($) =>
       seq(
-        alias(/[mM][aA][iI][nN][tT][aA][iI][nN][eE][rR]/, 'MAINTAINER'),
+        keyword($, /[mM][aA][iI][nN][tT][aA][iI][nN][eE][rR]/, 'MAINTAINER'),
         /.*/,
       ),
 
-    cross_build_instruction: () =>
+    cross_build_instruction: ($) =>
       seq(
-        alias(
+        keyword(
+          $,
           /[cC][rR][oO][sS][sS]_[bB][uU][iI][lL][dD][a-zA-Z_]*/,
           'CROSS_BUILD',
         ),
