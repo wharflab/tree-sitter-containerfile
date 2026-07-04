@@ -2302,11 +2302,8 @@
             "name": "_immediate_expansion"
           },
           {
-            "type": "IMMEDIATE_TOKEN",
-            "content": {
-              "type": "PATTERN",
-              "value": "\\$[^a-zA-Z_{\\s]"
-            }
+            "type": "SYMBOL",
+            "name": "_literal_dollar"
           }
         ]
       }
@@ -3000,11 +2997,8 @@
             "name": "_immediate_expansion"
           },
           {
-            "type": "IMMEDIATE_TOKEN",
-            "content": {
-              "type": "PATTERN",
-              "value": "\\$[^a-zA-Z_{\\s\"']"
-            }
+            "type": "SYMBOL",
+            "name": "_literal_dollar"
           }
         ]
       }
@@ -3308,6 +3302,10 @@
     {
       "type": "SYMBOL",
       "name": "_heredoc_nl"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_literal_dollar"
     },
     {
       "type": "SYMBOL",

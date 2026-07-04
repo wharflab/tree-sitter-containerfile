@@ -101,6 +101,7 @@ export default grammar({
     $._heredoc_line,
     $.heredoc_end,
     $._heredoc_nl,
+    $._literal_dollar,
     $.error_sentinel,
   ],
 
@@ -660,8 +661,10 @@ export default grammar({
         choice(
           token.immediate(/[^\s\$]+/),
           $._immediate_expansion,
-          // A `$` not starting a valid expansion is literal (--exclude=$5).
-          token.immediate(/\$[^a-zA-Z_{\s]/),
+          // A `$` not starting a valid expansion is literal text
+          // (--exclude=$5, a value ending in `$`); handled by the external
+          // scanner's lookahead. A real $ident / ${...} is left to the grammar.
+          $._literal_dollar,
         ),
       ),
 
@@ -839,12 +842,12 @@ export default grammar({
           token.immediate(/[\\`] /),
           token.immediate(/[\\`][^\s\n]/),
           $._immediate_expansion,
-          // A `$` not starting a valid expansion is literal text. The first
-          // form matches `$` plus the following non-identifier/brace char that
-          // is not a value terminator (handles $5, $$, cost:$5.00); the second
-          // matches a bare `$` at the end of a value (cost$, k=$). A real
-          // expansion still wins for $ident and ${...} (longer/immediate).
-          token.immediate(/\$[^a-zA-Z_{\s"']/),
+          // A `$` not starting a valid expansion is literal text. The external
+          // scanner emits _literal_dollar for a `$` that is NOT followed by an
+          // identifier char or `{` — the lookahead a regex token cannot do —
+          // covering $5, $$, cost:$5.00, a trailing `cost$`, and a bare `$`,
+          // while a real $ident / ${...} expansion is left to the grammar.
+          $._literal_dollar,
         ),
       ),
 
