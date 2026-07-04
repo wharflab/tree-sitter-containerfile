@@ -233,3 +233,16 @@ FROM registry.example.com:5000/team/app:1.0
     (image_spec
       name: (image_name)
       tag: (image_tag))))
+
+==================
+Registry with variable port
+==================
+
+FROM registry:${PORT}/myimage
+
+---
+
+(source_file
+  (from_instruction
+    (image_spec
+      name: (image_name))))

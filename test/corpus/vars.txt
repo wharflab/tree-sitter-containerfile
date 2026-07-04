@@ -309,3 +309,22 @@ ENV R=${foo:-${bar}}
             (expansion_operator)
             (expansion
               (variable))))))))
+
+================================================================================
+Expansion default with quoted brace
+================================================================================
+
+ENV Y=${x:-"blue}"}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (env_instruction
+    (env_pair
+      name: (unquoted_string)
+      value: (unquoted_string
+        (expansion
+          (variable)
+          (expansion_modifier
+            (expansion_operator)
+            (double_quoted_string)))))))

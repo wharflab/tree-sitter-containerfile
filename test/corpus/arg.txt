@@ -110,3 +110,16 @@ ARG X=pre"mid"post
       default: (unquoted_string)
       default: (double_quoted_string)
       default: (unquoted_string))))
+
+==================
+Empty default value
+==================
+
+ARG MY_VAR=
+
+---
+
+(source_file
+  (arg_instruction
+    (arg_pair
+      name: (unquoted_string))))

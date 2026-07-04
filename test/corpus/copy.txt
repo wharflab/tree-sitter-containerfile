@@ -107,3 +107,22 @@ COPY --chown=1000:1000 -- b.txt /app/
     (end_of_options)
     (path)
     (path)))
+
+==================
+End-of-options allows dash-prefixed paths
+==================
+
+COPY -- -src.txt /app/
+ADD -- -archive.tar /dest/
+
+---
+
+(source_file
+  (copy_instruction
+    (end_of_options)
+    (path)
+    (path))
+  (add_instruction
+    (end_of_options)
+    (path)
+    (path)))

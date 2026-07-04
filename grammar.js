@@ -30,6 +30,7 @@ const spacedValueContinuation = ($, atom) =>
 /**
  * The inner content of a double-quoted string, shared by the standalone rule
  * and the immediate variant used for adjacent-segment concatenation.
+ *
  * @param {GrammarSymbols<string>} $
  * @returns {RuleOrLiteral}
  */
@@ -47,6 +48,7 @@ const doubleQuotedBody = ($) =>
 
 /**
  * The inner content of a single-quoted string (fully literal).
+ *
  * @returns {RuleOrLiteral}
  */
 const singleQuotedBody = () =>
@@ -63,6 +65,7 @@ const singleQuotedBody = () =>
  * The first segment may lead with a quoted string (optionally trailed by an
  * unquoted run) or a bare unquoted run; each subsequent quoted segment must
  * abut the previous one and may itself be trailed by an unquoted run.
+ *
  * @param {GrammarSymbols<string>} $
  * @param {RuleOrLiteral} leadingQuoted
  * @returns {RuleOrLiteral}
@@ -186,9 +189,18 @@ export default grammar({
       seq(
         alias(/[aA][dD][dD]/, 'ADD'),
         repeat($.param),
-        optional(seq($.end_of_options, $._non_newline_whitespace)),
         choice(
           $.json_string_array,
+          // After a bare `--` end-of-options separator, source paths may
+          // begin with `-`.
+          seq(
+            $.end_of_options,
+            repeat1(
+              seq(alias($.path_with_heredoc_or_dash, $.path), $._non_newline_whitespace),
+            ),
+            alias($.path_with_heredoc_or_dash, $.path),
+            repeat($.heredoc_block),
+          ),
           seq(
             repeat1(
               seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace),
@@ -203,9 +215,16 @@ export default grammar({
       seq(
         alias(/[cC][oO][pP][yY]/, 'COPY'),
         repeat($.param),
-        optional(seq($.end_of_options, $._non_newline_whitespace)),
         choice(
           $.json_string_array,
+          seq(
+            $.end_of_options,
+            repeat1(
+              seq(alias($.path_with_heredoc_or_dash, $.path), $._non_newline_whitespace),
+            ),
+            alias($.path_with_heredoc_or_dash, $.path),
+            repeat($.heredoc_block),
+          ),
           seq(
             repeat1(
               seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace),
@@ -280,14 +299,17 @@ export default grammar({
         optional(
           seq(
             token.immediate('='),
-            field('default',
-              adjacentValue(
-                $,
-                choice(
-                  $.double_quoted_string,
-                  $.single_quoted_string,
-                ),
-              )),
+            // The default is optional so an empty default (ARG X=) parses.
+            optional(
+              field('default',
+                adjacentValue(
+                  $,
+                  choice(
+                    $.double_quoted_string,
+                    $.single_quoted_string,
+                  ),
+                )),
+            ),
           ),
         ),
       ),
@@ -428,6 +450,22 @@ export default grammar({
         ),
       ),
 
+    // Same as path_with_heredoc but the leading `-` restriction is lifted:
+    // used only after an end_of_options `--`, where a source path may begin
+    // with a dash (COPY -- -src /dst).
+    path_with_heredoc_or_dash: ($) =>
+      choice(
+        $.heredoc_marker,
+        seq(
+          choice(
+            /[^\s\$<]/,
+            /<[^<]/,
+            $.expansion,
+          ),
+          repeat(choice(token.immediate(/[^\s\$]+/), $._immediate_expansion)),
+        ),
+      ),
+
     expansion: $ =>
       seq('$', $._expansion_body),
 
@@ -460,7 +498,12 @@ export default grammar({
         ),
         repeat(
           choice(
-            token.immediate(/[^}$]+/),
+            // Exclude quote chars from the literal run so a quoted word
+            // (e.g. ${var:-"blue}"}) is parsed as a string and its `}`/`$`
+            // do not terminate the expansion prematurely.
+            token.immediate(/[^}$"']+/),
+            alias($._immediate_double_quoted_string, $.double_quoted_string),
+            alias($._immediate_single_quoted_string, $.single_quoted_string),
             $._immediate_expansion,
           ),
         ),
@@ -574,8 +617,10 @@ export default grammar({
             token.immediate(/[^@:\s\$]+/),
             // A registry host may include a port: the `:PORT/` before the
             // repository path is part of the name, not the tag (which is the
-            // colon after the final path segment).
-            token.immediate(/:\d+\//),
+            // colon after the final path segment). The port may be literal
+            // digits or a build-arg expansion (registry:${PORT}/img). Matched
+            // as a single token so it does not conflict with image_tag's `:`.
+            token.immediate(/:(\d+|\$[a-zA-Z_][a-zA-Z0-9_]*|\$\{[^}]+\})\//),
             $._immediate_expansion,
           ),
         ),
@@ -793,8 +838,8 @@ export default grammar({
           // A `$` not starting a valid expansion is literal text. The first
           // form matches `$` plus the following non-identifier/brace char that
           // is not a value terminator (handles $5, $$, cost:$5.00); the second
-          // matches a `$` at the end of the value. A real expansion still wins
-          // for $ident and ${...}.
+          // matches a bare `$` at the end of a value (cost$, k=$). A real
+          // expansion still wins for $ident and ${...} (longer/immediate).
           token.immediate(/\$[^a-zA-Z_{\s"']/),
         ),
       ),

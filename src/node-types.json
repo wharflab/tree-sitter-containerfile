@@ -254,11 +254,19 @@
       "required": true,
       "types": [
         {
+          "type": "double_quoted_string",
+          "named": true
+        },
+        {
           "type": "expansion",
           "named": true
         },
         {
           "type": "expansion_operator",
+          "named": true
+        },
+        {
+          "type": "single_quoted_string",
           "named": true
         }
       ]
