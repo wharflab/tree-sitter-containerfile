@@ -13,6 +13,7 @@ enum {
     CHECK_DIRECTIVE_LEN = 5,
     ESCAPE_DIRECTIVE_LEN = 6,
     SYNTAX_DIRECTIVE_LEN = 6,
+    MAX_WINDOWS_WCHAR_CODEPOINT = 0xFFFF,
 };
 
 typedef struct {
@@ -37,6 +38,7 @@ enum TokenType {
     HEREDOC_END,
     HEREDOC_NL,
     LITERAL_DOLLAR,
+    KEYWORD_TERMINATOR,
     ERROR_SENTINEL,
 };
 
@@ -189,6 +191,7 @@ void tree_sitter_containerfile_external_scanner_deserialize(void *payload,
 
 static bool is_inline_space(int32_t codepoint) {
     return (codepoint != '\0' && codepoint != '\n' && codepoint != '\r' &&
+            codepoint <= MAX_WINDOWS_WCHAR_CODEPOINT &&
             iswspace(codepoint) != 0) != 0;
 }
 
@@ -740,6 +743,41 @@ static bool scan_literal_dollar(TSLexer *lexer) {
     return true;
 }
 
+static bool is_continued_comment_line(scanner_state *state, TSLexer *lexer) {
+    if (!state->at_line_start || lexer->get_column(lexer) != 0) {
+        return false;
+    }
+
+    skip_inline_whitespace(lexer);
+    return lexer->lookahead == '#';
+}
+
+static bool scan_keyword_terminator(scanner_state *state, TSLexer *lexer,
+                                    const bool *valid_symbols) {
+    if (!valid_symbols[KEYWORD_TERMINATOR] ||
+        valid_symbols[ERROR_SENTINEL]) {
+        return false;
+    }
+
+    if (is_line_end(lexer)) {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = KEYWORD_TERMINATOR;
+        return true;
+    }
+
+    if (!is_inline_space(lexer->lookahead)) {
+        return false;
+    }
+
+    lexer->mark_end(lexer);
+    if (is_continued_comment_line(state, lexer)) {
+        return false;
+    }
+
+    lexer->result_symbol = KEYWORD_TERMINATOR;
+    return true;
+}
+
 static bool scan_content(scanner_state *state, TSLexer *lexer,
                          const bool *valid_symbols) {
     if (state->heredoc_count == 0) {
@@ -807,6 +845,21 @@ bool tree_sitter_containerfile_external_scanner_scan(void *payload, TSLexer *lex
     if (state->in_heredoc &&
         (valid_symbols[HEREDOC_LINE] || valid_symbols[HEREDOC_END])) {
         return scan_content(state, lexer, valid_symbols);
+    }
+
+    // A zero-width word boundary right after an instruction keyword: only
+    // whitespace, a line end, or EOF may follow, so glued forms (FROMalpine)
+    // fail to parse. Checked before scan_line_continuation, which skips
+    // inline whitespace and would move the lexer off the boundary. When the
+    // lookahead is the escape char, we fall through instead of failing so a
+    // line continuation is consumed as an extra first and the boundary is
+    // re-checked at the start of the continued line; this matches BuildKit's
+    // join-then-tokenize semantics (`FROM\<nl> alpine` is valid, while
+    // `FROM\<nl>alpine` joins to FROMalpine and is not). Suppressed during
+    // error recovery (ERROR_SENTINEL valid): zero-width tokens there can
+    // prevent the parser from making progress.
+    if (scan_keyword_terminator(state, lexer, valid_symbols)) {
+        return true;
     }
 
     if (valid_symbols[REQUIRED_LINE_CONTINUATION] ||

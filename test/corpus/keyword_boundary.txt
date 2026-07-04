@@ -1,0 +1,123 @@
+==================
+Glued FROM keyword is not an instruction
+==================
+
+FROMalpine
+
+---
+
+(source_file
+	(ERROR))
+
+==================
+Glued RUN keyword is not an instruction
+==================
+
+RUNecho hi
+
+---
+
+(source_file
+	(ERROR))
+
+==================
+Glued EXPOSE keyword is not an instruction
+==================
+
+EXPOSE8080
+
+---
+
+(source_file
+	(ERROR))
+
+==================
+Glued USER keyword is not an instruction
+==================
+
+USERroot
+
+---
+
+(source_file
+	(ERROR))
+
+==================
+Glued MAINTAINER keyword is not an instruction
+==================
+
+MAINTAINERfoo
+
+---
+
+(source_file
+	(ERROR))
+
+==================
+Glued AS keyword is not a stage alias
+==================
+
+FROM alpine ASbuilder
+
+---
+
+(source_file
+	(from_instruction
+		(image_spec
+			name: (image_name)))
+	(ERROR))
+
+==================
+Continuation directly after keyword joins into an invalid instruction
+==================
+
+FROM\
+alpine
+
+---
+
+(source_file
+	(ERROR
+		(line_continuation)))
+
+==================
+Comment-only continuation does not end a keyword
+==================
+
+FROM\
+  # comment
+alpine
+
+---
+
+(source_file
+	(ERROR
+		(line_continuation)))
+
+==================
+Continuation after keyword followed by whitespace is valid
+==================
+
+FROM\
+ alpine
+
+---
+
+(source_file
+	(from_instruction
+		(line_continuation)
+		(image_spec
+			name: (image_name))))
+
+==================
+Keyword followed by tab is valid
+==================
+
+FROM	alpine
+
+---
+
+(source_file
+	(from_instruction
+		(image_spec
+			name: (image_name))))
