@@ -76,3 +76,16 @@ EXPOSE $PORT/tcp
     (expose_port
       (expansion
         (variable)))))
+
+==================
+Invalid protocol is rejected
+==================
+
+EXPOSE 80/http
+
+---
+
+(source_file
+  (expose_instruction
+    (expose_port))
+  (ERROR))

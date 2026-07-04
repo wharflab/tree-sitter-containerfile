@@ -1887,7 +1887,7 @@
               "type": "IMMEDIATE_TOKEN",
               "content": {
                 "type": "PATTERN",
-                "value": "\\/[a-zA-Z]+"
+                "value": "\\/([tT][cC][pP]|[uU][dD][pP]|[sS][cC][tT][pP])"
               }
             },
             {
@@ -2824,6 +2824,10 @@
               {
                 "type": "SYMBOL",
                 "name": "_immediate_expansion"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_literal_dollar"
               }
             ]
           }
@@ -2883,6 +2887,10 @@
               {
                 "type": "SYMBOL",
                 "name": "_immediate_expansion"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_literal_dollar"
               }
             ]
           }

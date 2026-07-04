@@ -43,6 +43,9 @@ const doubleQuotedBody = ($) =>
       '\\',
       '`',
       $._immediate_expansion,
+      // A `$` not starting a valid expansion is literal inside double quotes
+      // too (e.g. "$5", "cost$"); handled by the external scanner's lookahead.
+      $._literal_dollar,
     ),
   );
 
@@ -565,9 +568,9 @@ export default grammar({
     expose_port: ($) =>
       seq(
         choice(/\d+(-\d+)?/, $.expansion),
-        // Protocol is optional and case-insensitive; Docker normalizes it and
-        // accepts tcp, udp, and sctp. It must abut the port (no space).
-        optional(token.immediate(/\/[a-zA-Z]+/)),
+        // Protocol is optional and case-insensitive; Docker accepts only tcp,
+        // udp, and sctp (and rejects anything else). It must abut the port.
+        optional(token.immediate(/\/([tT][cC][pP]|[uU][dD][pP]|[sS][cC][tT][pP])/)),
       ),
 
     label_pair: ($) =>
