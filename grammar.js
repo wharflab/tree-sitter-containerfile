@@ -506,6 +506,9 @@ export default grammar({
             alias($._immediate_double_quoted_string, $.double_quoted_string),
             alias($._immediate_single_quoted_string, $.single_quoted_string),
             $._immediate_expansion,
+            // A `$` not starting a valid expansion is literal inside a modifier
+            // word too (e.g. ${foo:-$5}, ${foo:-cost$)); handled by the scanner.
+            $._literal_dollar,
           ),
         ),
       ),
@@ -930,7 +933,7 @@ export default grammar({
     // ", \, `, and $ inside double-quoted strings. A \$ is literal text (the
     // following identifier is NOT expanded).
     double_quoted_escape_sequence: () => token.immediate(
-      /[\\`][\\`"$]/,
+      /[\\`][\\`"]/,
     ),
 
     _non_newline_whitespace: () => token.immediate(/[\t ]+/),

@@ -1615,6 +1615,10 @@
               {
                 "type": "SYMBOL",
                 "name": "_immediate_expansion"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_literal_dollar"
               }
             ]
           }
@@ -3247,7 +3251,7 @@
       "type": "IMMEDIATE_TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "[\\\\`][\\\\`\"$]"
+        "value": "[\\\\`][\\\\`\"]"
       }
     },
     "_non_newline_whitespace": {
