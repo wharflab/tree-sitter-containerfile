@@ -660,6 +660,8 @@ export default grammar({
         choice(
           token.immediate(/[^\s\$]+/),
           $._immediate_expansion,
+          // A `$` not starting a valid expansion is literal (--exclude=$5).
+          token.immediate(/\$[^a-zA-Z_{\s]/),
         ),
       ),
 

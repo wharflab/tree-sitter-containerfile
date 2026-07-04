@@ -2300,6 +2300,13 @@
           {
             "type": "SYMBOL",
             "name": "_immediate_expansion"
+          },
+          {
+            "type": "IMMEDIATE_TOKEN",
+            "content": {
+              "type": "PATTERN",
+              "value": "\\$[^a-zA-Z_{\\s]"
+            }
           }
         ]
       }

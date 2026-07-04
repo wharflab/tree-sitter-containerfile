@@ -126,3 +126,17 @@ ADD -- -archive.tar /dest/
     (end_of_options)
     (path)
     (path)))
+
+==================
+Flag value with literal dollar
+==================
+
+COPY --exclude=$5 . /dst
+
+---
+
+(source_file
+  (copy_instruction
+    (param)
+    (path)
+    (path)))
