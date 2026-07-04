@@ -1579,16 +1579,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "IMMEDIATE_TOKEN",
-            "content": {
-              "type": "PATTERN",
-              "value": ":?[-+?]"
-            }
-          },
-          "named": true,
-          "value": "expansion_operator"
+          "type": "SYMBOL",
+          "name": "expansion_operator"
         },
         {
           "type": "REPEAT",
@@ -1628,6 +1620,13 @@
           }
         }
       ]
+    },
+    "expansion_operator": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": ":?[-+?]"
+      }
     },
     "variable": {
       "type": "IMMEDIATE_TOKEN",

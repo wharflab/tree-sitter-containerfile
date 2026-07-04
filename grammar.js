@@ -492,10 +492,7 @@ export default grammar({
     // are pre-release in BuildKit and `#` collides with comment lexing.
     expansion_modifier: $ =>
       seq(
-        alias(
-          token.immediate(/:?[-+?]/),
-          $.expansion_operator,
-        ),
+        $.expansion_operator,
         repeat(
           choice(
             // Exclude quote chars from the literal run so a quoted word
@@ -508,6 +505,11 @@ export default grammar({
           ),
         ),
       ),
+
+    // A real (non-alias) rule so the node is a public `sym_` symbol that older
+    // tree-sitter query compilers (e.g. go-tree-sitter) accept in queries; an
+    // alias of an inline token compiles to an unqueryable `aux_sym`.
+    expansion_operator: () => token.immediate(/:?[-+?]/),
 
     variable: () => token.immediate(/[a-zA-Z_][a-zA-Z0-9_]*/),
 

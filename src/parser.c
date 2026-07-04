@@ -80,7 +80,7 @@ enum ts_symbol_identifiers {
   aux_sym__expansion_body_token1 = 50,
   anon_sym_RBRACE = 51,
   aux_sym_expansion_modifier_token1 = 52,
-  aux_sym_expansion_modifier_token2 = 53,
+  sym_expansion_operator = 53,
   sym__env_trailing_single_quotes = 54,
   aux_sym__spaced_env_pair_token1 = 55,
   aux_sym__env_key_token1 = 56,
@@ -313,8 +313,8 @@ static const char * const ts_symbol_names[] = {
   [anon_sym_LBRACE] = "{",
   [aux_sym__expansion_body_token1] = "_expansion_body_token1",
   [anon_sym_RBRACE] = "}",
-  [aux_sym_expansion_modifier_token1] = "expansion_operator",
-  [aux_sym_expansion_modifier_token2] = "expansion_modifier_token2",
+  [aux_sym_expansion_modifier_token1] = "expansion_modifier_token1",
+  [sym_expansion_operator] = "expansion_operator",
   [sym__env_trailing_single_quotes] = "_env_trailing_single_quotes",
   [aux_sym__spaced_env_pair_token1] = "_spaced_env_pair_token1",
   [aux_sym__env_key_token1] = "unquoted_string",
@@ -548,7 +548,7 @@ static const TSSymbol ts_symbol_map[] = {
   [aux_sym__expansion_body_token1] = aux_sym__expansion_body_token1,
   [anon_sym_RBRACE] = anon_sym_RBRACE,
   [aux_sym_expansion_modifier_token1] = aux_sym_expansion_modifier_token1,
-  [aux_sym_expansion_modifier_token2] = aux_sym_expansion_modifier_token2,
+  [sym_expansion_operator] = sym_expansion_operator,
   [sym__env_trailing_single_quotes] = sym__env_trailing_single_quotes,
   [aux_sym__spaced_env_pair_token1] = aux_sym__spaced_env_pair_token1,
   [aux_sym__env_key_token1] = sym_unquoted_string,
@@ -938,12 +938,12 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
     .named = false,
   },
   [aux_sym_expansion_modifier_token1] = {
-    .visible = true,
-    .named = true,
-  },
-  [aux_sym_expansion_modifier_token2] = {
     .visible = false,
     .named = false,
+  },
+  [sym_expansion_operator] = {
+    .visible = true,
+    .named = true,
   },
   [sym__env_trailing_single_quotes] = {
     .visible = false,
@@ -2432,7 +2432,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       if (lookahead == '$') ADVANCE(264);
       if (lookahead == '\'') ADVANCE(316);
       if (lookahead == '}') ADVANCE(272);
-      if (lookahead != 0) ADVANCE(274);
+      if (lookahead != 0) ADVANCE(273);
       END_STATE();
     case 3:
       if (lookahead == '"') ADVANCE(311);
@@ -3287,7 +3287,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
     case 132:
       if (lookahead == '+' ||
           lookahead == '-' ||
-          lookahead == '?') ADVANCE(273);
+          lookahead == '?') ADVANCE(274);
       END_STATE();
     case 133:
       if (lookahead == '\t' ||
@@ -3499,7 +3499,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       if (lookahead == '}') ADVANCE(272);
       if (lookahead == '+' ||
           lookahead == '-' ||
-          lookahead == '?') ADVANCE(273);
+          lookahead == '?') ADVANCE(274);
       if (lookahead == '\t' ||
           lookahead == '\f' ||
           lookahead == '\r' ||
@@ -4515,14 +4515,14 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       END_STATE();
     case 273:
       ACCEPT_TOKEN(aux_sym_expansion_modifier_token1);
-      END_STATE();
-    case 274:
-      ACCEPT_TOKEN(aux_sym_expansion_modifier_token2);
       if (lookahead != 0 &&
           lookahead != '"' &&
           lookahead != '$' &&
           lookahead != '\'' &&
-          lookahead != '}') ADVANCE(274);
+          lookahead != '}') ADVANCE(273);
+      END_STATE();
+    case 274:
+      ACCEPT_TOKEN(sym_expansion_operator);
       END_STATE();
     case 275:
       ACCEPT_TOKEN(sym__env_trailing_single_quotes);
@@ -8863,7 +8863,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(594), 1,
       anon_sym_RBRACE,
     ACTIONS(596), 1,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
     ACTIONS(598), 1,
       anon_sym_DQUOTE2,
     ACTIONS(600), 1,
@@ -9009,7 +9009,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(610), 1,
       anon_sym_RBRACE,
     ACTIONS(612), 1,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
     ACTIONS(3), 2,
       sym_comment,
       sym_line_continuation,
@@ -9212,7 +9212,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(642), 1,
       anon_sym_RBRACE,
     ACTIONS(644), 1,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
     ACTIONS(647), 1,
       anon_sym_DQUOTE2,
     ACTIONS(650), 1,
@@ -11270,7 +11270,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(493), 5,
       anon_sym_DOLLAR2,
       anon_sym_RBRACE,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
       anon_sym_DQUOTE2,
       anon_sym_SQUOTE2,
   [7198] = 2,
@@ -11280,7 +11280,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(501), 5,
       anon_sym_DOLLAR2,
       anon_sym_RBRACE,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
       anon_sym_DQUOTE2,
       anon_sym_SQUOTE2,
   [7210] = 2,
@@ -11313,7 +11313,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(466), 5,
       anon_sym_DOLLAR2,
       anon_sym_RBRACE,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
       anon_sym_DQUOTE2,
       anon_sym_SQUOTE2,
   [7252] = 2,
@@ -11323,7 +11323,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(475), 5,
       anon_sym_DOLLAR2,
       anon_sym_RBRACE,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
       anon_sym_DQUOTE2,
       anon_sym_SQUOTE2,
   [7264] = 2,
@@ -11800,7 +11800,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(162), 5,
       anon_sym_DOLLAR2,
       anon_sym_RBRACE,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
       anon_sym_DQUOTE2,
       anon_sym_SQUOTE2,
   [7882] = 4,
@@ -11822,7 +11822,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(212), 5,
       anon_sym_DOLLAR2,
       anon_sym_RBRACE,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
       anon_sym_DQUOTE2,
       anon_sym_SQUOTE2,
   [7910] = 2,
@@ -11832,7 +11832,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(216), 5,
       anon_sym_DOLLAR2,
       anon_sym_RBRACE,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
       anon_sym_DQUOTE2,
       anon_sym_SQUOTE2,
   [7922] = 2,
@@ -11842,7 +11842,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(220), 5,
       anon_sym_DOLLAR2,
       anon_sym_RBRACE,
-      aux_sym_expansion_modifier_token2,
+      aux_sym_expansion_modifier_token1,
       anon_sym_DQUOTE2,
       anon_sym_SQUOTE2,
   [7934] = 4,
@@ -12922,7 +12922,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(1339), 1,
       anon_sym_RBRACE,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     STATE(585), 1,
       sym_expansion_modifier,
     ACTIONS(3), 2,
@@ -13051,7 +13051,7 @@ static const uint16_t ts_small_parse_table[] = {
       aux_sym__env_key_token1,
   [9545] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1367), 1,
       anon_sym_RBRACE,
     STATE(549), 1,
@@ -13113,7 +13113,7 @@ static const uint16_t ts_small_parse_table[] = {
       ts_builtin_sym_end,
   [9627] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1377), 1,
       anon_sym_RBRACE,
     STATE(547), 1,
@@ -13133,7 +13133,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9655] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1381), 1,
       anon_sym_RBRACE,
     STATE(565), 1,
@@ -13161,7 +13161,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9693] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1388), 1,
       anon_sym_RBRACE,
     STATE(531), 1,
@@ -13205,7 +13205,7 @@ static const uint16_t ts_small_parse_table[] = {
       aux_sym__spaced_env_pair_token1,
   [9751] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1397), 1,
       anon_sym_RBRACE,
     STATE(555), 1,
@@ -13225,7 +13225,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9779] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1401), 1,
       anon_sym_RBRACE,
     STATE(564), 1,
@@ -13235,7 +13235,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9793] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1403), 1,
       anon_sym_RBRACE,
     STATE(526), 1,
@@ -13245,7 +13245,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9807] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1405), 1,
       anon_sym_RBRACE,
     STATE(530), 1,
@@ -13255,7 +13255,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9821] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1407), 1,
       anon_sym_RBRACE,
     STATE(533), 1,
@@ -13265,7 +13265,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9835] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1409), 1,
       anon_sym_RBRACE,
     STATE(572), 1,
@@ -13275,7 +13275,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9849] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1411), 1,
       anon_sym_RBRACE,
     STATE(536), 1,
@@ -13285,7 +13285,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9863] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1413), 1,
       anon_sym_RBRACE,
     STATE(539), 1,
@@ -13303,7 +13303,7 @@ static const uint16_t ts_small_parse_table[] = {
       aux_sym__spaced_env_pair_token1,
   [9887] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1415), 1,
       anon_sym_RBRACE,
     STATE(542), 1,
@@ -13321,7 +13321,7 @@ static const uint16_t ts_small_parse_table[] = {
       aux_sym_from_instruction_token2,
   [9911] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1419), 1,
       anon_sym_RBRACE,
     STATE(545), 1,
@@ -13331,7 +13331,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9925] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1421), 1,
       anon_sym_RBRACE,
     STATE(548), 1,
@@ -13350,7 +13350,7 @@ static const uint16_t ts_small_parse_table[] = {
       ts_builtin_sym_end,
   [9951] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1427), 1,
       anon_sym_RBRACE,
     STATE(554), 1,
@@ -13360,7 +13360,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9965] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1429), 1,
       anon_sym_RBRACE,
     STATE(557), 1,
@@ -13370,7 +13370,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9979] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1431), 1,
       anon_sym_RBRACE,
     STATE(560), 1,
@@ -13380,7 +13380,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_line_continuation,
   [9993] = 4,
     ACTIONS(1341), 1,
-      aux_sym_expansion_modifier_token1,
+      sym_expansion_operator,
     ACTIONS(1433), 1,
       anon_sym_RBRACE,
     STATE(563), 1,
