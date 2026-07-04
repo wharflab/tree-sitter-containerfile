@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-containerfile",
-  "version": "0.8.1",
+  "version": "0.9.1",
   "description": "A Containerfile and Dockerfile grammar for tree-sitter",
   "type": "module",
   "repository": {
@@ -62,5 +62,8 @@
     "lint": "eslint grammar.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --test bindings/node/binding_test.js"
+  },
+  "allowScripts": {
+    "tree-sitter-cli@0.26.10": true
   }
 }
