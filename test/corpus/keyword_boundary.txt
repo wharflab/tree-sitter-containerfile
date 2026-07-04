@@ -81,6 +81,20 @@ alpine
 		(line_continuation)))
 
 ==================
+Comment-only continuation does not end a keyword
+==================
+
+FROM\
+  # comment
+alpine
+
+---
+
+(source_file
+	(ERROR
+		(line_continuation)))
+
+==================
 Continuation after keyword followed by whitespace is valid
 ==================
 
