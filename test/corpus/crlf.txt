@@ -1,0 +1,54 @@
+==================
+RUN continuation with CRLF line endings
+==================
+
+FROM alpine
+RUN echo a \
+ echo b
+
+---
+
+(source_file
+  (from_instruction
+    (image_spec
+      name: (image_name)))
+  (run_instruction
+    (shell_command
+      (line_continuation))))
+
+==================
+RUN continuation with CRLF and no space before backslash
+==================
+
+FROM alpine
+RUN echo a\
+echo b
+
+---
+
+(source_file
+  (from_instruction
+    (image_spec
+      name: (image_name)))
+  (run_instruction
+    (shell_command
+      (line_continuation))))
+
+==================
+HEALTHCHECK continuation with CRLF line endings
+==================
+
+FROM alpine
+HEALTHCHECK CMD curl -f localhost \
+ || exit 1
+
+---
+
+(source_file
+  (from_instruction
+    (image_spec
+      name: (image_name)))
+  (healthcheck_instruction
+    (cmd_instruction
+      (shell_command
+        (line_continuation)))))

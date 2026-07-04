@@ -9,55 +9,61 @@
 ((shell_command) @injection.content
   (#set! injection.language "bash"))
 
+; Inject into the heredoc body only (heredoc_content), which excludes the
+; closing delimiter line so the sub-language does not ingest the terminator.
 ((run_instruction
-  (heredoc_block) @injection.content)
-  (#set! injection.language "bash")
-  (#set! injection.include-children))
+  (heredoc_block
+    (heredoc_content) @injection.content))
+  (#set! injection.language "bash"))
 
 ((copy_instruction
   (param)*
+  (end_of_options)?
   (path
     (heredoc_marker))
   .
   (path) @injection.filename
   .
-  (heredoc_block) @injection.content)
+  (heredoc_block
+    (heredoc_content) @injection.content))
   (#match? @injection.filename "\\.[jJ][sS][oO][nN]$")
-  (#set! injection.language "json")
-  (#set! injection.include-children))
+  (#set! injection.language "json"))
 
 ((copy_instruction
   (param)*
+  (end_of_options)?
   (path
     (heredoc_marker))
   .
   (path) @injection.filename
   .
-  (heredoc_block) @injection.content)
+  (heredoc_block
+    (heredoc_content) @injection.content))
   (#match? @injection.filename "\\.[yY][aA]?[mM][lL]$")
-  (#set! injection.language "yaml")
-  (#set! injection.include-children))
+  (#set! injection.language "yaml"))
 
 ((copy_instruction
   (param)*
+  (end_of_options)?
   (path
     (heredoc_marker))
   .
   (path) @injection.filename
   .
-  (heredoc_block) @injection.content)
+  (heredoc_block
+    (heredoc_content) @injection.content))
   (#match? @injection.filename "\\.[tT][oO][mM][lL]$")
-  (#set! injection.language "toml")
-  (#set! injection.include-children))
+  (#set! injection.language "toml"))
 
 ((copy_instruction
   (param)*
+  (end_of_options)?
   (path
     (heredoc_marker))
   .
   (path) @injection.filename
   .
-  (heredoc_block) @injection.content)
+  (heredoc_block
+    (heredoc_content) @injection.content))
   (#match? @injection.filename "\\.[xX][mM][lL]$")
-  (#set! injection.language "xml")
-  (#set! injection.include-children))
+  (#set! injection.language "xml"))

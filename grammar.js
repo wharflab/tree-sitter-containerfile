@@ -27,6 +27,69 @@ const spacedValueContinuation = ($, atom) =>
     repeat1(atom),
   );
 
+/**
+ * The inner content of a double-quoted string, shared by the standalone rule
+ * and the immediate variant used for adjacent-segment concatenation.
+ *
+ * @param {GrammarSymbols<string>} $
+ * @returns {RuleOrLiteral}
+ */
+const doubleQuotedBody = ($) =>
+  repeat(
+    choice(
+      token.immediate(/[^"\n\\`\$]+/),
+      alias($.double_quoted_escape_sequence, $.escape_sequence),
+      token.immediate(/\$\(/),
+      '\\',
+      '`',
+      $._immediate_expansion,
+      // A `$` not starting a valid expansion is literal inside double quotes
+      // too (e.g. "$5", "cost$"); handled by the external scanner's lookahead.
+      $._literal_dollar,
+    ),
+  );
+
+/**
+ * The inner content of a single-quoted string (fully literal).
+ *
+ * @returns {RuleOrLiteral}
+ */
+const singleQuotedBody = () =>
+  repeat(
+    choice(
+      token.immediate(/[^'\n\\`]+/),
+      token.immediate(/[\\`]/),
+    ),
+  );
+
+/**
+ * A `KEY=` value made of one or more directly-adjacent segments that
+ * concatenate, mirroring shell word parsing (K=pre"mid"post -> premidpost).
+ * The first segment may lead with a quoted string (optionally trailed by an
+ * unquoted run) or a bare unquoted run; each subsequent quoted segment must
+ * abut the previous one and may itself be trailed by an unquoted run.
+ *
+ * @param {GrammarSymbols<string>} $
+ * @param {RuleOrLiteral} leadingQuoted
+ * @returns {RuleOrLiteral}
+ */
+const adjacentValue = ($, leadingQuoted) =>
+  seq(
+    choice(
+      seq(leadingQuoted, optional($.unquoted_string)),
+      $.unquoted_string,
+    ),
+    repeat(
+      seq(
+        choice(
+          alias($._immediate_double_quoted_string, $.double_quoted_string),
+          alias($._immediate_single_quoted_string, $.single_quoted_string),
+        ),
+        optional($.unquoted_string),
+      ),
+    ),
+  );
+
 export default grammar({
   name: 'containerfile',
 
@@ -41,6 +104,7 @@ export default grammar({
     $._heredoc_line,
     $.heredoc_end,
     $._heredoc_nl,
+    $._literal_dollar,
     $.error_sentinel,
   ],
 
@@ -116,7 +180,7 @@ export default grammar({
     expose_instruction: ($) =>
       seq(
         alias(/[eE][xX][pP][oO][sS][eE]/, 'EXPOSE'),
-        repeat1(choice($.expose_port, $.expansion)),
+        repeat1($.expose_port),
       ),
 
     env_instruction: ($) =>
@@ -131,6 +195,16 @@ export default grammar({
         repeat($.param),
         choice(
           $.json_string_array,
+          // After a bare `--` end-of-options separator, source paths may
+          // begin with `-`.
+          seq(
+            $.end_of_options,
+            repeat1(
+              seq(alias($.path_with_heredoc_or_dash, $.path), $._non_newline_whitespace),
+            ),
+            alias($.path_with_heredoc_or_dash, $.path),
+            repeat($.heredoc_block),
+          ),
           seq(
             repeat1(
               seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace),
@@ -147,6 +221,14 @@ export default grammar({
         repeat($.param),
         choice(
           $.json_string_array,
+          seq(
+            $.end_of_options,
+            repeat1(
+              seq(alias($.path_with_heredoc_or_dash, $.path), $._non_newline_whitespace),
+            ),
+            alias($.path_with_heredoc_or_dash, $.path),
+            repeat($.heredoc_block),
+          ),
           seq(
             repeat1(
               seq(alias($.path_with_heredoc, $.path), $._non_newline_whitespace),
@@ -187,7 +269,7 @@ export default grammar({
 
     _user_name_or_group: ($) =>
       seq(
-        choice(/([a-zA-Z][-A-Za-z0-9_]*|[0-9]+)/, $.expansion),
+        choice(/([a-zA-Z_][-A-Za-z0-9_.]*|[0-9]+)/, $.expansion),
         repeat($._immediate_user_name_or_group_fragment),
       ),
 
@@ -197,7 +279,7 @@ export default grammar({
 
     _immediate_user_name_or_group_fragment: ($) =>
       choice(
-        token.immediate(/([a-zA-Z][-a-zA-Z0-9_]*|[0-9]+)/),
+        token.immediate(/([a-zA-Z_][-a-zA-Z0-9_.]*|[0-9]+)/),
         $._immediate_expansion,
       ),
 
@@ -221,12 +303,17 @@ export default grammar({
         optional(
           seq(
             token.immediate('='),
-            field('default',
-              choice(
-                $.double_quoted_string,
-                $.single_quoted_string,
-                $.unquoted_string,
-              )),
+            // The default is optional so an empty default (ARG X=) parses.
+            optional(
+              field('default',
+                adjacentValue(
+                  $,
+                  choice(
+                    $.double_quoted_string,
+                    $.single_quoted_string,
+                  ),
+                )),
+            ),
           ),
         ),
       ),
@@ -298,12 +385,12 @@ export default grammar({
         $._shell_double_quoted_fragment,
         $._shell_single_quoted_fragment,
         /[,=-]/,
-        /[^cC\\`\[\n#\s,=\-"']([^\\`\n<"']|[\\`][^ \t\n])*/,
-        /[cC]([^mM\\`\n<"']|[\\`][^ \t\n])([^\\`\n<"']|[\\`][^ \t\n])*/,
-        /[cC][mM]([^dD\\`\n<"']|[\\`][^ \t\n])([^\\`\n<"']|[\\`][^ \t\n])*/,
-        /[cC][mM][dD][^\s\\`\n<"']([^\\`\n<"']|[\\`][^ \t\n])*/,
+        /[^cC\\`\[\n#\s,=\-"']([^\\`\n<"']|[\\`][^ \t\n\r])*/,
+        /[cC]([^mM\\`\n<"']|[\\`][^ \t\n\r])([^\\`\n<"']|[\\`][^ \t\n\r])*/,
+        /[cC][mM]([^dD\\`\n<"']|[\\`][^ \t\n\r])([^\\`\n<"']|[\\`][^ \t\n\r])*/,
+        /[cC][mM][dD][^\s\\`\n<"']([^\\`\n<"']|[\\`][^ \t\n\r])*/,
         /[cC][mM]?/,
-        /[\\`][^\n,=-]/,
+        /[\\`][^\r\n,=-]/,
         /[\\`]/,
         /<[^<]/,
       ),
@@ -334,9 +421,15 @@ export default grammar({
         // We also alias this token to hide it from the output like all other
         // whitespace.
         $._heredoc_nl,
-        repeat(seq($._heredoc_line, '\n')),
+        // The body (everything before the closing delimiter) is wrapped in a
+        // named node so language injection can target exactly the redirected
+        // content, excluding the heredoc_end delimiter line.
+        optional($.heredoc_content),
         $.heredoc_end,
       ),
+
+    heredoc_content: ($) =>
+      repeat1(seq($._heredoc_line, '\n')),
 
     path: ($) =>
       seq(
@@ -361,6 +454,22 @@ export default grammar({
         ),
       ),
 
+    // Same as path_with_heredoc but the leading `-` restriction is lifted:
+    // used only after an end_of_options `--`, where a source path may begin
+    // with a dash (COPY -- -src /dst).
+    path_with_heredoc_or_dash: ($) =>
+      choice(
+        $.heredoc_marker,
+        seq(
+          choice(
+            /[^\s\$<]/,
+            /<[^<]/,
+            $.expansion,
+          ),
+          repeat(choice(token.immediate(/[^\s\$]+/), $._immediate_expansion)),
+        ),
+      ),
+
     expansion: $ =>
       seq('$', $._expansion_body),
 
@@ -374,10 +483,40 @@ export default grammar({
         $.variable,
         seq(
           token.immediate('{'),
-          alias(token.immediate(/[^\}]+/), $.variable),
+          alias(token.immediate(/[a-zA-Z_][a-zA-Z0-9_]*/), $.variable),
+          optional($.expansion_modifier),
           token.immediate('}'),
         ),
       ),
+
+    // Shell-style parameter expansion modifier inside ${...}: a default/
+    // alternate/error operator (:- - :+ + :? ?) followed by a word that may
+    // itself contain nested expansions. The word runs to the matching brace.
+    // The pattern-manipulation operators (# ## % %% / //) are omitted: they
+    // are pre-release in BuildKit and `#` collides with comment lexing.
+    expansion_modifier: $ =>
+      seq(
+        $.expansion_operator,
+        repeat(
+          choice(
+            // Exclude quote chars from the literal run so a quoted word
+            // (e.g. ${var:-"blue}"}) is parsed as a string and its `}`/`$`
+            // do not terminate the expansion prematurely.
+            token.immediate(/[^}$"']+/),
+            alias($._immediate_double_quoted_string, $.double_quoted_string),
+            alias($._immediate_single_quoted_string, $.single_quoted_string),
+            $._immediate_expansion,
+            // A `$` not starting a valid expansion is literal inside a modifier
+            // word too (e.g. ${foo:-$5}, ${foo:-cost$)); handled by the scanner.
+            $._literal_dollar,
+          ),
+        ),
+      ),
+
+    // A real (non-alias) rule so the node is a public `sym_` symbol that older
+    // tree-sitter query compilers (e.g. go-tree-sitter) accept in queries; an
+    // alias of an inline token compiles to an unqueryable `aux_sym`.
+    expansion_operator: () => token.immediate(/:?[-+?]/),
 
     variable: () => token.immediate(/[a-zA-Z_][a-zA-Z0-9_]*/),
 
@@ -390,11 +529,18 @@ export default grammar({
         ),
       ),
 
+    // A value is one or more directly-adjacent segments (quoted or unquoted)
+    // that concatenate, mirroring shell word parsing (ENV K=pre"mid"post ->
+    // premidpost). A quoted segment is the boundary between unquoted runs; an
+    // unquoted run immediately after a closing quote abuts it. unquoted_string
+    // is itself greedy, so it only ever appears once between quoted segments.
     _env_assignment_value: ($) =>
-      choice(
-        $.double_quoted_string,
-        $._env_single_quoted_string_with_trailing_quote,
-        $.unquoted_string,
+      adjacentValue(
+        $,
+        choice(
+          $.double_quoted_string,
+          $._env_single_quoted_string_with_trailing_quote,
+        ),
       ),
 
     _env_single_quoted_string_with_trailing_quote: ($) =>
@@ -422,17 +568,25 @@ export default grammar({
     _env_key: ($) =>
       alias(/[a-zA-Z_][a-zA-Z0-9_]*/, $.unquoted_string),
 
-    expose_port: () => seq(/\d+(-\d+)?/, optional(choice('/tcp', '/udp'))),
+    expose_port: ($) =>
+      seq(
+        choice(/\d+(-\d+)?/, $.expansion),
+        // Protocol is optional and case-insensitive; Docker accepts only tcp,
+        // udp, and sctp (and rejects anything else). It must abut the port.
+        optional(token.immediate(/\/([tT][cC][pP]|[uU][dD][pP]|[sS][cC][tT][pP])/)),
+      ),
 
     label_pair: ($) =>
       seq(
         field('key', $._label_key),
         token.immediate('='),
         field('value',
-          choice(
-            $.double_quoted_string,
-            $.single_quoted_string,
-            $.unquoted_string,
+          adjacentValue(
+            $,
+            choice(
+              $.double_quoted_string,
+              $.single_quoted_string,
+            ),
           )),
       ),
 
@@ -467,7 +621,18 @@ export default grammar({
     image_name: ($) =>
       seq(
         choice(/[^@:\s\$-]/, $.expansion),
-        repeat(choice(token.immediate(/[^@:\s\$]+/), $._immediate_expansion)),
+        repeat(
+          choice(
+            token.immediate(/[^@:\s\$]+/),
+            // A registry host may include a port: the `:PORT/` before the
+            // repository path is part of the name, not the tag (which is the
+            // colon after the final path segment). The port may be literal
+            // digits or a build-arg expansion (registry:${PORT}/img). Matched
+            // as a single token so it does not conflict with image_tag's `:`.
+            token.immediate(/:(\d+|\$[a-zA-Z_][a-zA-Z0-9_]*|\$\{[^}]+\})\//),
+            $._immediate_expansion,
+          ),
+        ),
       ),
 
     image_tag: ($) =>
@@ -483,17 +648,36 @@ export default grammar({
       ),
 
     // Generic parsing of options passed right after an instruction name.
-    param: () =>
+    // The value surfaces $-expansions (e.g. --platform=$BUILDPLATFORM,
+    // --chown=$USER:$GROUP) as expansion nodes so they can be highlighted.
+    param: ($) =>
       seq(
         '--',
         field('name', token.immediate(/[a-z][-a-z]*/)),
         optional(
           seq(
             token.immediate('='),
-            field('value', token.immediate(/[^\s]+/)),
+            field('value', $._param_value),
           ),
         ),
       ),
+
+    _param_value: ($) =>
+      repeat1(
+        choice(
+          token.immediate(/[^\s\$]+/),
+          $._immediate_expansion,
+          // A `$` not starting a valid expansion is literal text
+          // (--exclude=$5, a value ending in `$`); handled by the external
+          // scanner's lookahead. A real $ident / ${...} is left to the grammar.
+          $._literal_dollar,
+        ),
+      ),
+
+    // POSIX end-of-options separator (`COPY -- src dst`). BuildKit stops flag
+    // collection here; it's the documented way to pass a source path that
+    // begins with `-`. A bare `--` not followed by a flag name.
+    end_of_options: () => '--',
 
     // Specific parsing of the --mount option e.g.
     //
@@ -518,13 +702,18 @@ export default grammar({
       token.immediate(/[^\s=,]+/),
       optional(seq(
         token.immediate('='),
-        token.immediate(/[^\s=,]+/),
+        // The value is captured as a single literal run. (Unlike generic
+        // --flag values, mount option values do not surface $-expansions as
+        // nodes: the comma-separated mount grammar makes interleaving literal
+        // text with expansions ambiguous, so we keep the whole value literal
+        // to guarantee complete, non-truncating capture.)
+        token.immediate(/[^\s,]+/),
       )),
     ),
 
     image_alias: ($) => seq(
-      choice(/[-a-zA-Z0-9_]+/, $.expansion),
-      repeat(choice(token.immediate(/[-a-zA-Z0-9_]+/), $._immediate_expansion)),
+      choice(/[-a-zA-Z0-9_.]+/, $.expansion),
+      repeat(choice(token.immediate(/[-a-zA-Z0-9_.]+/), $._immediate_expansion)),
     ),
 
     _json_or_shell_command: ($) =>
@@ -569,8 +758,8 @@ export default grammar({
         $._shell_double_quoted_fragment,
         $._shell_single_quoted_fragment,
         /[,=-]/,
-        /[^\\`\[\n#\s,=\-"']([^\\`\n<"']|[\\`][^ \t\n])*/,
-        /[\\`][^\n,=-]/,
+        /[^\\`\[\n#\s,=\-"']([^\\`\n<"']|[\\`][^ \t\n\r])*/,
+        /[\\`][^\r\n,=-]/,
         /[\\`]/,
         /<[^<]/,
       ),
@@ -632,35 +821,25 @@ export default grammar({
     ),
 
     double_quoted_string: ($) =>
-      seq(
-        '"',
-        repeat(
-          choice(
-            token.immediate(/[^"\n\\`\$]+/),
-            alias($.double_quoted_escape_sequence, $.escape_sequence),
-            token.immediate(/\$\(/),
-            '\\',
-            '`',
-            $._immediate_expansion,
-          ),
-        ),
-        '"',
-      ),
+      seq('"', doubleQuotedBody($), '"'),
 
-    // same as double_quoted_string but without $-expansions:
-    single_quoted_string: ($) =>
-      seq(
-        '\'',
-        repeat(
-          choice(
-            token.immediate(/[^'\n\\`]+/),
-            alias($.single_quoted_escape_sequence, $.escape_sequence),
-            '\\',
-            '`',
-          ),
-        ),
-        '\'',
-      ),
+    // Same as double_quoted_string but the opening quote must abut the
+    // preceding token, so it can concatenate onto an adjacent value segment.
+    _immediate_double_quoted_string: ($) =>
+      seq(token.immediate('"'), doubleQuotedBody($), '"'),
+
+    // Single-quoted strings are fully literal in Dockerfile shell parsing:
+    // there is no escape processing (a backslash or backtick before the
+    // closing quote does NOT escape it) and no $-expansions. A backslash/
+    // backtick before a newline is still a line continuation (BuildKit joins
+    // physical lines before quote processing), which is handled by the
+    // external line_continuation extra; an isolated backslash/backtick is
+    // literal text.
+    single_quoted_string: () =>
+      seq('\'', singleQuotedBody(), '\''),
+
+    _immediate_single_quoted_string: () =>
+      seq(token.immediate('\''), singleQuotedBody(), '\''),
 
     unquoted_string: ($) =>
       repeat1(
@@ -669,6 +848,12 @@ export default grammar({
           token.immediate(/[\\`] /),
           token.immediate(/[\\`][^\s\n]/),
           $._immediate_expansion,
+          // A `$` not starting a valid expansion is literal text. The external
+          // scanner emits _literal_dollar for a `$` that is NOT followed by an
+          // identifier char or `{` — the lookahead a regex token cannot do —
+          // covering $5, $$, cost:$5.00, a trailing `cost$`, and a bare `$`,
+          // while a real $ident / ${...} expansion is left to the grammar.
+          $._literal_dollar,
         ),
       ),
 
@@ -700,10 +885,15 @@ export default grammar({
         $._immediate_expansion,
       ),
 
+    // The legacy `ENV KEY value` value must not START with a quote (a leading
+    // quote is parsed as a proper quoted string by _spaced_env_pair), so the
+    // first fragment excludes quotes. Later atoms keep quotes as literal text
+    // so a mid-line quote (ENV GREETING hello "world") does not error.
     _spaced_env_value: ($) =>
-      spacedValue(
-        $._spaced_env_value_atom,
-        $._spaced_env_value_continuation,
+      seq(
+        $._spaced_env_value_first_fragment,
+        repeat($._spaced_env_value_atom),
+        repeat($._spaced_env_value_continuation),
       ),
 
     _continued_spaced_env_value: ($) =>
@@ -720,7 +910,8 @@ export default grammar({
     _spaced_env_value_atom: ($) =>
       choice($._spaced_env_value_fragment, $._non_newline_whitespace),
 
-    _spaced_env_value_fragment: ($) =>
+    // First fragment of a spaced value: excludes a leading quote.
+    _spaced_env_value_first_fragment: ($) =>
       choice(
         token.immediate(/[^\s\n\"'\\`\$]+/),
         token.immediate(/[\\`] /),
@@ -728,12 +919,21 @@ export default grammar({
         $._immediate_expansion,
       ),
 
+    // Legacy `ENV KEY value` takes the rest of the line as the value, with
+    // quotes kept as literal text (matching _spaced_label_value_fragment).
+    _spaced_env_value_fragment: ($) =>
+      choice(
+        token.immediate(/[^\s\n\\`\$]+/),
+        token.immediate(/[\\`] /),
+        token.immediate(/[\\`][^\s\n]/),
+        $._immediate_expansion,
+      ),
+
+    // The active escape char (\ by default, or ` via `# escape=`) escapes
+    // ", \, `, and $ inside double-quoted strings. A \$ is literal text (the
+    // following identifier is NOT expanded).
     double_quoted_escape_sequence: () => token.immediate(
       /[\\`][\\`"]/,
-    ),
-
-    single_quoted_escape_sequence: () => token.immediate(
-      /[\\`][\\`']/,
     ),
 
     _non_newline_whitespace: () => token.immediate(/[\t ]+/),

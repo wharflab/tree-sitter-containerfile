@@ -181,3 +181,18 @@ LABEL "key"="value"
 		(label_pair
 			key: (double_quoted_string)
 			value: (double_quoted_string))))
+
+==================
+Adjacent quoted and unquoted segments concatenate
+==================
+
+LABEL k=foo"bar"
+
+---
+
+(source_file
+  (label_instruction
+    (label_pair
+      key: (unquoted_string)
+      value: (unquoted_string)
+      value: (double_quoted_string))))

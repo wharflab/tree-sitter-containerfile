@@ -211,6 +211,7 @@ EOF
     (shell_command
       (heredoc_marker))
     (heredoc_block
+      (heredoc_content)
       (heredoc_end))))
 
 ==================
@@ -236,4 +237,35 @@ RUN bundle install --jobs $(nproc)
     (path)
     (path))
   (run_instruction
+    (shell_command)))
+
+==================
+Mount option value with expansion
+==================
+
+RUN --mount=type=bind,source=${SRC},target=/app ls
+
+---
+
+(source_file
+  (run_instruction
+    (mount_param
+      value: (mount_param_param)
+      value: (mount_param_param)
+      value: (mount_param_param))
+    (shell_command)))
+
+==================
+Mount option value mixing literal and expansion
+==================
+
+RUN --mount=type=cache,target=/root/${DIR}/cache go build
+
+---
+
+(source_file
+  (run_instruction
+    (mount_param
+      value: (mount_param_param)
+      value: (mount_param_param))
     (shell_command)))

@@ -28,6 +28,11 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: stable
+          # Disable the build cache: bindings/go cgo-#includes ../../src/parser.c,
+          # which Go's cache does NOT track as a transitive dependency. A restored
+          # cache from a prior run reuses a stale compiled parser (missing newly
+          # added node types), causing spurious "Invalid node type" query errors.
+          cache: false
 
       - name: Run Go unit tests (grammar bindings and queries)
         run: CGO_ENABLED=1 go test ./...

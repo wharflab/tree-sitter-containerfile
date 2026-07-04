@@ -70,7 +70,7 @@ Backtick quoted escape sequences
 ==================
 # escape=`
 ENV DOUBLE="say `"hi`""
-ENV SINGLE='it`'s'
+ENV SINGLE='it`s'
 
 ---
 
@@ -85,8 +85,7 @@ ENV SINGLE='it`'s'
   (env_instruction
     (env_pair
       name: (unquoted_string)
-      value: (single_quoted_string
-        (escape_sequence)))))
+      value: (single_quoted_string))))
 
 ==================
 Invalid escape value closes directive prologue

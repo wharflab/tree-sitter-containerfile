@@ -175,18 +175,74 @@ FROM a AS b c
   (ERROR))
 
 ======================================================
-No spaces in image alias expansion
+Image alias with expansion
 ======================================================
 
-FROM a AS b $C
+FROM a AS b$C
 
 ---
 
 (source_file
   (from_instruction
     (image_spec
-      (image_name))
-    (ERROR)
-    (image_alias
+      name: (image_name))
+    as: (image_alias
       (expansion
         (variable)))))
+
+==================
+Stage name with dot
+==================
+
+FROM alpine AS my.stage
+
+---
+
+(source_file
+  (from_instruction
+    (image_spec
+      name: (image_name))
+    as: (image_alias)))
+
+==================
+Platform flag with expansion
+==================
+
+FROM --platform=$BUILDPLATFORM alpine
+
+---
+
+(source_file
+  (from_instruction
+    (param
+      value: (expansion
+        (variable)))
+    (image_spec
+      name: (image_name))))
+
+==================
+Registry with port
+==================
+
+FROM registry.example.com:5000/team/app:1.0
+
+---
+
+(source_file
+  (from_instruction
+    (image_spec
+      name: (image_name)
+      tag: (image_tag))))
+
+==================
+Registry with variable port
+==================
+
+FROM registry:${PORT}/myimage
+
+---
+
+(source_file
+  (from_instruction
+    (image_spec
+      name: (image_name))))

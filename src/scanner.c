@@ -36,6 +36,7 @@ enum TokenType {
     HEREDOC_LINE,
     HEREDOC_END,
     HEREDOC_NL,
+    LITERAL_DOLLAR,
     ERROR_SENTINEL,
 };
 
@@ -716,6 +717,29 @@ static bool scan_marker(scanner_state *state, TSLexer *lexer) {
     return true;
 }
 
+// Match a `$` that does NOT begin a valid ${...} or $identifier expansion, so
+// it is literal text (e.g. cost$, $5, $$, a trailing bare $). This needs one
+// character of lookahead past the `$`, which a grammar regex token cannot do.
+// A `$` followed by an identifier char or `{` is left for the grammar's
+// expansion rules.
+static bool scan_literal_dollar(TSLexer *lexer) {
+    if (lexer->lookahead != '$') {
+        return false;
+    }
+
+    lexer->advance(lexer, false);
+
+    int32_t next = lexer->lookahead;
+    bool starts_expansion =
+        (next == '{' || next == '_' || is_ascii_alpha(next)) != 0;
+    if (starts_expansion) {
+        return false;
+    }
+
+    lexer->result_symbol = LITERAL_DOLLAR;
+    return true;
+}
+
 static bool scan_content(scanner_state *state, TSLexer *lexer,
                          const bool *valid_symbols) {
     if (state->heredoc_count == 0) {
@@ -790,6 +814,10 @@ bool tree_sitter_containerfile_external_scanner_scan(void *payload, TSLexer *lex
         if (scan_line_continuation(state, lexer, valid_symbols)) {
             return true;
         }
+    }
+
+    if (valid_symbols[LITERAL_DOLLAR] && scan_literal_dollar(lexer)) {
+        return true;
     }
 
     if (valid_symbols[INVALID_JSON_ARRAY_SHELL_COMMAND] &&

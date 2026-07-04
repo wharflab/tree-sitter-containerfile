@@ -87,3 +87,56 @@ COPY --chmod=0644 [ "test file", "/tmp/test file" ]
     (json_string_array
       (json_string)
       (json_string))))
+
+==================
+End-of-options separator
+==================
+
+COPY -- a.txt /app/
+COPY --chown=1000:1000 -- b.txt /app/
+
+---
+
+(source_file
+  (copy_instruction
+    (end_of_options)
+    (path)
+    (path))
+  (copy_instruction
+    (param)
+    (end_of_options)
+    (path)
+    (path)))
+
+==================
+End-of-options allows dash-prefixed paths
+==================
+
+COPY -- -src.txt /app/
+ADD -- -archive.tar /dest/
+
+---
+
+(source_file
+  (copy_instruction
+    (end_of_options)
+    (path)
+    (path))
+  (add_instruction
+    (end_of_options)
+    (path)
+    (path)))
+
+==================
+Flag value with literal dollar
+==================
+
+COPY --exclude=$5 . /dst
+
+---
+
+(source_file
+  (copy_instruction
+    (param)
+    (path)
+    (path)))

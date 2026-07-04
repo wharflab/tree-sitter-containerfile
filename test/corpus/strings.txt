@@ -83,7 +83,6 @@ Single-quoted strings
 ENV KEY 'value'
 ENV KEY 'conti\
 nue'
-ENV KEY 'quotes: \' \''
 ENV KEY 'backslash: \\'
 ENV KEY 'not escape sequences: \a \n'
 
@@ -102,14 +101,7 @@ ENV KEY 'not escape sequences: \a \n'
   (env_instruction
     (env_pair
       (unquoted_string)
-      (single_quoted_string
-        (escape_sequence)
-        (escape_sequence))))
-  (env_instruction
-    (env_pair
-      (unquoted_string)
-      (single_quoted_string
-        (escape_sequence))))
+      (single_quoted_string)))
   (env_instruction
     (env_pair
       (unquoted_string)
