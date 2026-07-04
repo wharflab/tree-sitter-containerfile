@@ -18,6 +18,7 @@
 
 ((copy_instruction
   (param)*
+  (end_of_options)?
   (path
     (heredoc_marker))
   .
@@ -30,6 +31,7 @@
 
 ((copy_instruction
   (param)*
+  (end_of_options)?
   (path
     (heredoc_marker))
   .
@@ -42,6 +44,7 @@
 
 ((copy_instruction
   (param)*
+  (end_of_options)?
   (path
     (heredoc_marker))
   .
@@ -54,6 +57,7 @@
 
 ((copy_instruction
   (param)*
+  (end_of_options)?
   (path
     (heredoc_marker))
   .
